@@ -1,0 +1,6 @@
+@model (long Id, string Active)
+@* the areas of a registry for its administrators (tabs): General and Access *@
+<md-tabs label="@L["Common.Sections"]">
+    <md-tab href="/Registries/Edit?id=@Model.Id" active="@(Model.Active == "general")">@L["Registries.Tab.General"]</md-tab>
+    <md-tab href="/Registries/Access?id=@Model.Id" active="@(Model.Active == "access")">@L["Registries.Tab.Access"]</md-tab>
+</md-tabs>

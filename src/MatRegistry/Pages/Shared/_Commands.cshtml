@@ -1,0 +1,21 @@
+@model IReadOnlyList<(string Label, string Command)>
+@*
+    Commands to copy (docker login, pull, push): one input group of the toolkit each (FORM: a read-only field and a Copy button, data-copy names the field).
+    The ids are made here, so the partial can stand several times on a page.
+*@
+<div class="md-commands">
+    @foreach (var (label, command) in Model)
+    {
+        var id = "cmd-" + Guid.NewGuid().ToString("n")[..10];
+        <div>
+            @if (!string.IsNullOrEmpty(label))
+            {
+                <label class="md-command__label" for="@id">@label</label>
+            }
+            <div class="mat-input-group md-command">
+                <input class="mat-input mat-mono" id="@id" value="@command" readonly spellcheck="false" autocomplete="off" />
+                <button type="button" class="mat-btn mat-btn--secondary mat-btn--icon" data-copy="#@id" aria-label="@L["Common.Copy"]" data-tip="@L["Common.Copy"]">@Ui.Icon("copy")</button>
+            </div>
+        </div>
+    }
+</div>

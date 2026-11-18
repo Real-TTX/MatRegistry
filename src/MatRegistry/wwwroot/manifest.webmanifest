@@ -1,0 +1,70 @@
+{
+  "id": "/",
+  "name": "MatRegistry",
+  "short_name": "MatRegistry",
+  "description": "Your Docker registry: hosted and bound registries, copies between them. Deine Docker-Registry: eigene und gebundene Registries, Kopien zwischen ihnen.",
+  "start_url": "/Overview",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#f5f4f1",
+  "theme_color": "#f5f4f1",
+  "categories": [
+    "developer",
+    "utilities",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/img/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Repositories",
+      "short_name": "Repositories",
+      "url": "/Repositories",
+      "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Registries",
+      "short_name": "Registries",
+      "url": "/Registries",
+      "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Copy an image / Image kopieren",
+      "short_name": "Copy",
+      "url": "/Copies/New",
+      "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Access tokens / Zugriffstokens",
+      "short_name": "Tokens",
+      "url": "/Account/Tokens",
+      "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

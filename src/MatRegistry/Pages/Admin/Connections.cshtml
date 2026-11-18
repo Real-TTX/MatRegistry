@@ -1,0 +1,10 @@
+@page "/Admin/Connections"
+@model MatRegistry.Pages.Admin.ConnectionsModel
+@{
+    ViewData["Title"] = L["Connections.Title"].Value;
+    ViewData["PageSub"] = L["Connections.Sub"].Value;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Admin.Title"].Value, null), (L["Connections.Title"].Value, null) };
+}
+
+@* the Connections area of MatPlatform, the same in every app: what MatRegistry uses (MatIdentity, MatSMTP), how each was set, what it adds to a home screen *@
+<mat-connections />

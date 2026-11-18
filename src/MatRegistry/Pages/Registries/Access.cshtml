@@ -1,0 +1,62 @@
+@page "/Registries/Access"
+@model MatRegistry.Pages.Registries.AccessModel
+@{
+    ViewData["Title"] = Model.Registry.Name;
+    ViewData["NavKey"] = "registry-" + Model.Id;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Registries.Title"].Value, "/Registries"), (Model.Registry.Name, $"/Registries/View?id={Model.Id}"), (L["Registries.Tab.Access"].Value, null) };
+}
+
+<partial name="_RegistryTabs" model='(Model.Id, "access")' />
+
+@if (Model.Registry.Visibility == RegistryVisibility.Public)
+{
+    <div class="mat-alert mat-alert--info" role="status">@Ui.Icon("globe")<div class="mat-alert__body">@L["Registries.Access.Public"]</div></div>
+}
+
+<div class="mat-list">
+    @if (Model.People.Count == 0)
+    {
+        <partial name="_Empty" model="@(new EmptyStateModel("users", L["Registries.Access.Empty"].Value, L["Registries.Access.EmptyText"].Value, false))" />
+    }
+    else
+    {
+        <md-table caption="@L["Registries.Tab.Access"]">
+            <thead>
+                <tr><th scope="col">@L["Users.Col.User"]</th><th scope="col">@L["Users.Col.Role"]</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.People)
+                {
+                    <tr>
+                        <td data-label="@L["Users.Col.User"]">
+                            <div class="mat-table__name"><span class="mat-avatar mat-avatar--sm" aria-hidden="true">@Ui.Initials(p.DisplayName)</span><span>@p.DisplayName<small class="mat-mono">@p.Email</small></span></div>
+                        </td>
+                        <td data-label="@L["Users.Col.Role"]">
+                            @if (p.IsAdmin)
+                            {
+                                <span class="mat-pill mat-pill--accent">@L["Roles.Admin"]</span>
+                            }
+                            else
+                            {
+                                <form method="post" asp-page-handler="Role" asp-route-id="@Model.Id">
+                                    <input type="hidden" name="UserIdOf" value="@p.UserId" />
+                                    <div class="mat-seg" role="group" aria-label="@L["Registries.Access.RoleOf", p.DisplayName]">
+                                        @foreach (var r in Model.RoleChoices)
+                                        {
+                                            <button type="submit" class="mat-seg__btn" name="Role" value="@r.Value" aria-pressed="@(p.Role.ToString() == r.Value ? "true" : "false")">@r.Label</button>
+                                        }
+                                    </div>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </md-table>
+    }
+    <div class="mat-actions">
+        <a class="mat-btn mat-btn--secondary" href="/Registries">@Ui.Icon("back")<span>@L["Common.Back"]</span></a>
+    </div>
+</div>
+
+<p class="md-muted md-mt">@L["Registries.Access.Roles"]</p>

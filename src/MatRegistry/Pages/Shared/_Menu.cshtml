@@ -1,0 +1,69 @@
+@model (MenuModel Menu, string Area)
+@inject CurrentUser Me
+@*
+    The menus (SHELL-01 .. SHELL-19): one panel per menu of the switcher at the foot (SHELL-15), the one of the page shown.
+    - registry: Copy an image (the main action), Overview, Repositories, Registries, Copies, then every registry of the person
+    - settings: profile, password, access tokens, my data
+    - admin:    users, connections, activity, system (administrators only)
+    A page names what it shows: ViewData["NavKey"] ("overview", "repositories", "registries", "copies", "registry-4").
+*@
+@{
+    var m = Model.Menu;
+    var path = Context.Request.Path.Value ?? "/";
+    var key = ViewData["NavKey"] as string;
+
+    bool Under(string prefix) => path.Equals(prefix, StringComparison.OrdinalIgnoreCase) || path.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase);
+    string Cls(bool active) => "mat-nav__item" + (active ? " is-active" : string.Empty);
+    string Cur(bool active) => active ? "page" : null!;
+    string Badge(int n) => n > 99 ? "99+" : n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+}
+<nav class="mat-nav__scroll" aria-label="@L["Shell.Area.Registry"]" data-nav-panel="registry" hidden="@(Model.Area != "registry")">
+    <ul class="mat-nav__list">
+        @if (m.CanCopy)
+        {
+            <li><a class="mat-nav__item mat-nav__item--primary" href="/Copies/New">@Ui.Icon("copy")<span>@L["Copies.New"]</span></a></li>
+        }
+        <li><a class="@Cls(key == "overview")" href="/Overview" aria-current="@Cur(key == "overview")">@Ui.Icon("dashboard")<span>@L["Overview.Title"]</span></a></li>
+        <li><a class="@Cls(key == "repositories")" href="/Repositories" aria-current="@Cur(key == "repositories")">@Ui.Icon("box")<span>@L["Repositories.Title"]</span></a></li>
+        <li><a class="@Cls(key == "registries")" href="/Registries" aria-current="@Cur(key == "registries")">@Ui.Icon("registry")<span>@L["Registries.Title"]</span></a></li>
+        <li>
+            <a class="@Cls(key == "copies")" href="/Copies" aria-current="@Cur(key == "copies")">@Ui.Icon("copy")<span>@L["Copies.Title"]</span>
+                @if (m.CopiesRunning > 0)
+                {
+                    <span class="mat-nav__badge mat-nav__badge--info">@Badge(m.CopiesRunning)<span class="mat-sr-only"> @L["Copies.Running"]</span></span>
+                }
+            </a>
+        </li>
+
+        @if (m.Registries.Count > 0)
+        {
+            <li class="mat-nav__group" role="presentation"><span class="mat-nav__group-title">@L["Registries.Mine"]</span></li>
+        }
+        @foreach (var r in m.Registries)
+        {
+            var on = key == "registry-" + r.Id;
+            <li><a class="@Cls(on)" href="/Registries/View?id=@r.Id" aria-current="@Cur(on)">@Ui.Icon(r.Kind == RegistryKind.Hosted ? "registry" : "link")<span>@r.Name</span></a></li>
+        }
+    </ul>
+</nav>
+
+<nav class="mat-nav__scroll" aria-label="@L["Settings.Title"]" data-nav-panel="settings" hidden="@(Model.Area != "settings")">
+    <ul class="mat-nav__list">
+        <li><a class="@Cls(path.Equals("/Account", StringComparison.OrdinalIgnoreCase))" href="/Account" aria-current="@Cur(path.Equals("/Account", StringComparison.OrdinalIgnoreCase))">@Ui.Icon("user")<span>@L["Settings.Profile"]</span></a></li>
+        <li><a class="@Cls(Under("/Account/Password"))" href="/Account/Password" aria-current="@Cur(Under("/Account/Password"))">@Ui.Icon("lock")<span>@L["Password.Title"]</span></a></li>
+        <li><a class="@Cls(Under("/Account/Tokens"))" href="/Account/Tokens" aria-current="@Cur(Under("/Account/Tokens"))">@Ui.Icon("key")<span>@L["Tokens.Title"]</span></a></li>
+        <li><a class="@Cls(Under("/Account/Data"))" href="/Account/Data" aria-current="@Cur(Under("/Account/Data"))">@Ui.Icon("database")<span>@L["Data.Title"]</span></a></li>
+    </ul>
+</nav>
+
+@if (Me.IsAdmin)
+{
+    <nav class="mat-nav__scroll" aria-label="@L["Admin.Title"]" data-nav-panel="admin" hidden="@(Model.Area != "admin")">
+        <ul class="mat-nav__list">
+            <li><a class="@Cls(Under("/Admin/Users"))" href="/Admin/Users" aria-current="@Cur(Under("/Admin/Users"))">@Ui.Icon("user-circle")<span>@L["Users.Title"]</span></a></li>
+            <li><a class="@Cls(Under("/Admin/Connections"))" href="/Admin/Connections" aria-current="@Cur(Under("/Admin/Connections"))">@Ui.Icon("plug")<span>@L["Connections.Title"]</span></a></li>
+            <li><a class="@Cls(Under("/Admin/Activity"))" href="/Admin/Activity" aria-current="@Cur(Under("/Admin/Activity"))">@Ui.Icon("activity")<span>@L["Activity.Title"]</span></a></li>
+            <li><a class="@Cls(Under("/Admin/System"))" href="/Admin/System" aria-current="@Cur(Under("/Admin/System"))">@Ui.Icon("settings")<span>@L["System.Title"]</span></a></li>
+        </ul>
+    </nav>
+}

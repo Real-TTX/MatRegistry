@@ -1,0 +1,63 @@
+@page "/Account/Tokens"
+@model MatRegistry.Pages.Account.Tokens.IndexModel
+@{
+    ViewData["Title"] = L["Tokens.Title"].Value;
+    ViewData["PageSub"] = L["Tokens.Sub"].Value;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Settings.Title"].Value, "/Account"), (L["Tokens.Title"].Value, null) };
+    var login = new List<(string, string)> { (L["Overview.Login"].Value, $"docker login {Model.Host} -u {Model.UserName}") };
+}
+
+<div class="mat-list">
+    <partial name="_Toolbar" model="Model.Toolbar" />
+    @if (Model.Items.Count == 0)
+    {
+        var first = Model.Toolbar.Total == 0;
+        <partial name="_Empty" model="@(new EmptyStateModel("key", L[first ? "Tokens.Empty" : "Lists.NoMatch"].Value, L[first ? "Tokens.EmptyText" : "Lists.ChangeTools"].Value, first, "/Account/Tokens/Edit", L["Tokens.New"].Value, Model.Toolbar.UrlReset()))" />
+    }
+    else
+    {
+        <md-table caption="@L["Tokens.Title"]">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Common.Name"]</th>
+                    <th scope="col">@L["Tokens.Scope"]</th>
+                    <th scope="col" class="mat-hide-sm">@L["Tokens.Expires"]</th>
+                    <th scope="col" class="mat-hide-md">@L["Tokens.LastUsed"]</th>
+                    <th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model.Items)
+                {
+                    <tr>
+                        <td data-label="@L["Common.Name"]"><a class="md-name" href="/Account/Tokens/Edit?token=@t.Token">@Ui.Icon("key")<span>@t.Name</span></a><small class="md-block-line mat-mono md-muted">@t.SecretPrefix…</small></td>
+                        <td data-label="@L["Tokens.Scope"]"><span class="mat-pill @(t.Scope == TokenScope.PullPush ? "mat-pill--accent" : "mat-pill--plain")">@L["Tokens.Scope." + t.Scope]</span></td>
+                        <td data-label="@L["Tokens.Expires"]" class="mat-mono mat-hide-sm">
+                            @if (t.IsExpired)
+                            {
+                                <span class="mat-pill mat-pill--error">@L["Tokens.Expired"]</span>
+                            }
+                            else
+                            {
+                                @(t.Expires is null ? L["Tokens.NoExpiry"].Value : Dates.Stamp(t.Expires, Model.Zone))
+                            }
+                        </td>
+                        <td data-label="@L["Tokens.LastUsed"]" class="mat-mono mat-hide-md">@(t.LastUsed is null ? L["Common.Never"].Value : Dates.Stamp(t.LastUsed, Model.Zone))</td>
+                        <td class="mat-table__cell-actions"><div class="mat-table__actions"><a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Account/Tokens/Edit?token=@t.Token" aria-label="@L["Common.OpenNamed", t.Name]" data-tip="@L["Common.Open"]">@Ui.Icon("chevron-right")</a></div></td>
+                    </tr>
+                }
+            </tbody>
+        </md-table>
+    }
+    <div class="mat-actions">
+        <a class="mat-btn mat-btn--primary" href="/Account/Tokens/Edit">@Ui.Icon("plus")<span>@L["Tokens.New"]</span></a>
+    </div>
+</div>
+
+<div class="mat-card md-mt">
+    <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("terminal")@L["Tokens.HowTo"]</h2></div>
+    <div class="mat-card__body">
+        <partial name="_Commands" model="login" />
+        <p class="md-muted md-mt">@L["Tokens.HowTo.Text"]</p>
+    </div>
+</div>

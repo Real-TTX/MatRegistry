@@ -1,0 +1,26 @@
+# MatRegistry
+
+> MatRegistry is a self-hosted Docker registry with a web interface. It serves registries of its own (docker push and pull, OCI Distribution 1.1 and the Docker Registry HTTP API v2 under /v2/) and binds other registries (Docker Hub, GHCR, Quay, Harbor, a second MatRegistry): it browses them, copies images between any two registries, and serves a bound registry as a pull-through cache. Part of the Mat family of self-hosted apps.
+
+Everything except the start page needs an account. The interface is available in English and German. Images are never sent anywhere a person did not ask for: a copy or a pull through a cache goes to the registry that was bound by an administrator.
+
+## What people can do
+
+- Push and pull images: `docker login <host>`, `docker push <host>/<registry>/<repository>:<tag>`, `docker pull <host>/<registry>/<repository>:<tag>`. The first part of every name is the registry.
+- Browse the repositories of every registry they have a role in: tags with their platforms and sizes, the manifest of an image (layers, config, environment, labels, the steps of the build), multi-platform indexes, signatures and SBOMs that refer to an image (the referrers API).
+- Browse a bound registry: its catalog when it offers one, else a repository by its name; its tags and manifests as the registry has them now.
+- Copy an image with every platform from one registry into another (both may be hosted or bound), in the background; what the target has is skipped.
+- Pull through a cache: `docker pull <host>/<cache>/nginx:latest` fetches `library/nginx:latest` from Docker Hub once and keeps it; when Docker Hub is not reachable, the cache answers.
+- Make personal access tokens for `docker login` (pull only, or pull and push; with an end date), see when each was last used, delete them.
+- Download everything the app keeps about them (JSON) and delete their account.
+
+## What administrators can do
+
+- Create hosted registries and bind remote ones (address, credentials stored encrypted, cache on or off, how long a cached tag is trusted), make a registry public (anonymous pulls) or private, and give people the role Viewer or Editor in it.
+- Run the garbage collection (by hand or on a schedule; optionally also manifests without a tag), see the activity log and the numbers of the installation.
+- Connect other apps: sign-in through MatIdentity (OpenID Connect), mail through MatSMTP, and keys for apps that pull (the capability `registry.docker`, e.g. for MatDock).
+
+## Interfaces
+
+- `/v2/`: the registry API (OCI Distribution 1.1); `/v2/token`: its token service (Basic credentials: an access token, the key of a bound app, or the password of a local account).
+- `/api`: the Mat platform contract (description, health, state, settings, actions, connections) for Mattiverse and other consumers.

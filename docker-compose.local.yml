@@ -1,0 +1,73 @@
+# MatRegistry - Local (builds the image from this folder) with pgAdmin
+#   ./scripts/redeploy.ps1              (rebuilds and starts the stack: the way to test every change)
+#   docker compose -f docker-compose.local.yml up -d --build
+#   App:      http://localhost:4780
+#   pgAdmin:  http://localhost:4781   (no sign-in; database password: matregistry)
+#   Postgres: localhost:4782          (for "dotnet run" outside Docker, see appsettings.Development.json)
+name: matregistry-local
+
+services:
+  web:
+    build: .
+    image: matregistry:local
+    restart: unless-stopped
+    ports:
+      - "4780:4780"
+    volumes:
+      - web-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    ports:
+      - "4782:5432"
+    environment:
+      POSTGRES_DB: matregistry
+      POSTGRES_USER: matregistry
+      POSTGRES_PASSWORD: matregistry
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matregistry -d matregistry"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    ports:
+      - "4781:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@matregistry.example.com
+      PGADMIN_DEFAULT_PASSWORD: matregistry
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    configs:
+      - source: servers
+        target: /pgadmin4/servers.json
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - db
+
+configs:
+  servers:
+    content: |
+      {"Servers": {"1": {"Name": "MatRegistry (local)", "Group": "Servers", "Host": "db", "Port": 5432, "MaintenanceDB": "matregistry", "Username": "matregistry", "SSLMode": "prefer"}}}
+
+volumes:
+  web-data:
+  db-data:
+  pgadmin-data:
+
+# A fixed subnet: on a machine with many stacks Docker runs out of address pools otherwise
+# ("all predefined address pools have been fully subnetted").
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.253.78.0/24

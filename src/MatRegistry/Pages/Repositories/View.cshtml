@@ -1,0 +1,138 @@
+@page "/Repositories/View"
+@model MatRegistry.Pages.Repositories.ViewModel
+@{
+    var r = Model.Repository;
+    ViewData["Title"] = r.FullName;
+    ViewData["PageSub"] = r.Description ?? L[r.Kind == RegistryKind.Hosted ? "Repositories.Sub.Hosted" : "Repositories.Sub.Cache", r.Registry].Value;
+    ViewData["NavKey"] = "repositories";
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Repositories.Title"].Value, "/Repositories"), (r.Registry, $"/Registries/View?id={r.RegistryId}"), (r.Name, null) };
+    var newest = Model.Tags.Items.FirstOrDefault()?.Name ?? "latest";
+    var pull = new List<(string, string)> { (L["Repositories.Pull"].Value, $"docker pull {Model.Image(newest)}") };
+    if (r.CanWrite && r.Kind == RegistryKind.Hosted)
+    {
+        pull.Add((L["Repositories.PushTo"].Value, $"docker push {Model.Host}/{r.FullName}:<tag>"));
+    }
+}
+
+<div class="mat-card">
+    <div class="mat-card__body">
+        <partial name="_Commands" model="pull" />
+    </div>
+</div>
+
+<md-tabs label="@L["Common.Sections"]">
+    <md-tab href="/Repositories/View?id=@r.Id" active="@(Model.Tab == "tags")">@L["Tags.Title"] (@r.Tags)</md-tab>
+    <md-tab href="/Repositories/View?id=@r.Id&tab=general" active="@(Model.Tab == "general")">@L["Repositories.Tab.General"]</md-tab>
+</md-tabs>
+
+@if (Model.Tab == "general")
+{
+    <div class="mat-cols">
+        <div class="mat-col-12 mat-col-lg-7">
+            <form class="mat-form" method="post" novalidate>
+                <input type="hidden" name="Id" value="@r.Id" />
+                <partial name="_FormSummary" model="ViewData.ModelState" />
+                <div class="mat-card">
+                    <div class="mat-card__body mat-form">
+                        <md-field name="Description" kind="textarea" label="@L["Common.Description"]" value="@Model.Description" maxlength="2000" optional disabled="@(!r.CanWrite)" rows="4" hint="@L["Repositories.Description.Hint"]" />
+                    </div>
+                </div>
+                <md-buttons save="@(r.CanWrite ? L["Common.Save"].Value : null)" back="/Repositories" delete-handler="@(r.CanWrite ? "Delete" : null)" delete-label="@L["Repositories.Delete"]"
+                            delete-confirm="@L["Repositories.DeleteConfirm", r.FullName]" />
+            </form>
+        </div>
+        <div class="mat-col-12 mat-col-lg-5">
+            <div class="mat-card">
+                <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("info")@L["Repositories.Facts"]</h2></div>
+                <div class="mat-card__body">
+                    <dl class="mat-kv">
+                        <dt>@L["Registries.One"]</dt><dd><a href="/Registries/View?id=@r.RegistryId">@r.Registry</a> · @L[r.Kind == RegistryKind.Hosted ? "Registries.Kind.Hosted" : "Registries.Kind.Cache"]</dd>
+                        <dt>@L["Tags.Title"]</dt><dd>@r.Tags.ToString("N0")</dd>
+                        <dt>@L["Repositories.Manifests"]</dt><dd>@r.Manifests.ToString("N0")</dd>
+                        <dt>@L["Repositories.Col.Size"]</dt><dd>@Ui.Bytes(r.Size)</dd>
+                        <dt>@L["Repositories.Created"]</dt><dd class="mat-mono">@Dates.Stamp(r.Created, Model.Zone)</dd>
+                        <dt>@L["Repositories.Col.Pushed"]</dt><dd class="mat-mono">@(r.LastPush is null ? "–" : Dates.Stamp(r.LastPush, Model.Zone))</dd>
+                        <dt>@L["Repositories.Col.Pulls"]</dt><dd>@r.Pulls.ToString("N0")</dd>
+                        <dt>@L["Repositories.LastPull"]</dt><dd class="mat-mono">@(r.LastPull is null ? L["Common.Never"].Value : Dates.Stamp(r.LastPull, Model.Zone))</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="mat-list">
+        <partial name="_Toolbar" model="Model.Toolbar" />
+        @if (Model.Tags.Items.Count == 0)
+        {
+            var first = Model.Toolbar.Total == 0;
+            <partial name="_Empty" model="@(new EmptyStateModel("tag", L[first ? "Tags.Empty" : "Lists.NoMatch"].Value, L[first ? "Tags.EmptyText" : "Lists.ChangeTools"].Value, false, null, null, Model.Toolbar.UrlReset()))" />
+        }
+        else
+        {
+            <md-table caption="@L["Tags.Title"]">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Tags.Col"]</th>
+                        <th scope="col" class="mat-hide-sm">@L["Tags.Digest"]</th>
+                        <th scope="col">@L["Tags.Platforms"]</th>
+                        <th scope="col" class="mat-num">@L["Repositories.Col.Size"]</th>
+                        <th scope="col" class="mat-hide-md">@L["Repositories.Col.Pushed"]</th>
+                        <th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.Tags.Items)
+                    {
+                        <tr>
+                            <td data-label="@L["Tags.Col"]"><a class="md-name" href="/Repositories/Manifest?id=@r.Id&digest=@Uri.EscapeDataString(t.Digest)">@Ui.Icon("tag")<span>@t.Name</span></a></td>
+                            <td data-label="@L["Tags.Digest"]" class="mat-hide-sm"><span class="md-digest" title="@t.Digest">@RegistryNames.Short(t.Digest)</span></td>
+                            <td data-label="@L["Tags.Platforms"]">
+                                <span class="md-pills">
+                                    @if (t.ArtifactType is { } artifact)
+                                    {
+                                        <span class="mat-pill mat-pill--info">@L["Tags.Artifact"]</span>
+                                    }
+                                    else if (t.Platforms.Count == 0)
+                                    {
+                                        <span class="mat-pill mat-pill--plain">@L[t.Kind == ManifestKind.Index ? "Tags.MultiPlatform" : "Tags.UnknownPlatform"]</span>
+                                    }
+                                    @foreach (var p in t.Platforms.Take(6))
+                                    {
+                                        <span class="mat-pill mat-pill--plain">@p</span>
+                                    }
+                                    @if (t.Platforms.Count > 6)
+                                    {
+                                        <span class="mat-pill mat-pill--plain">+@(t.Platforms.Count - 6)</span>
+                                    }
+                                </span>
+                            </td>
+                            <td data-label="@L["Repositories.Col.Size"]" class="mat-num mat-mono">@(t.Size > 0 ? Ui.Bytes(t.Size) : "–")</td>
+                            <td data-label="@L["Repositories.Col.Pushed"]" class="mat-mono mat-hide-md">@Dates.Stamp(t.Updated, Model.Zone)</td>
+                            <td class="mat-table__cell-actions">
+                                <div class="mat-table__actions">
+                                    <button type="button" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" data-copy="docker pull @Model.Image(t.Name)" aria-label="@L["Tags.CopyPull", t.Name]" data-tip="@L["Tags.CopyPull", t.Name]">@Ui.Icon("copy")</button>
+                                    <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Copies/New?source=@r.RegistryId&repository=@Uri.EscapeDataString(r.Name)&reference=@Uri.EscapeDataString(t.Name)" aria-label="@L["Copies.CopyNamed", t.Name]" data-tip="@L["Copies.New"]">@Ui.Icon("upload")</a>
+                                    @if (r.CanWrite)
+                                    {
+                                        <form method="post" asp-page-handler="DeleteTag" asp-route-id="@r.Id">
+                                            <input type="hidden" name="tag" value="@t.Name" />
+                                            <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" aria-label="@L["Tags.DeleteNamed", t.Name]" data-tip="@L["Tags.Delete"]"
+                                                    data-confirm="@L["Tags.DeleteConfirm", t.Name]" data-confirm-ok="@L["Tags.Delete"]">@Ui.Icon("trash")</button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </md-table>
+        }
+        <partial name="_Pager" model="Model.Pager" />
+        <div class="mat-actions">
+            <a class="mat-btn mat-btn--primary" href="/Copies/New?source=@r.RegistryId&repository=@Uri.EscapeDataString(r.Name)&reference=@Uri.EscapeDataString(newest)">@Ui.Icon("copy")<span>@L["Copies.New"]</span></a>
+            <a class="mat-btn mat-btn--secondary" href="/Repositories">@Ui.Icon("back")<span>@L["Common.Back"]</span></a>
+        </div>
+    </div>
+}

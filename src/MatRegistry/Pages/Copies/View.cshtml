@@ -1,0 +1,53 @@
+@page "/Copies/View"
+@model MatRegistry.Pages.Copies.ViewModel
+@{
+    var j = Model.Job;
+    ViewData["Title"] = L["Copies.One"].Value;
+    ViewData["PageSub"] = $"{j.Source} → {j.Target}";
+    ViewData["NavKey"] = "copies";
+    ViewData["Width"] = "narrow";
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Copies.Title"].Value, "/Copies"), (j.Source, null) };
+}
+@section Head {
+    @if (Model.Running)
+    {
+        @* while the copy runs the page follows it (no script needed) *@
+        <meta http-equiv="refresh" content="3" />
+    }
+}
+
+<div class="mat-card">
+    <div class="mat-card__body">
+        <dl class="mat-kv">
+            <dt>@L["Common.Status"]</dt><dd><partial name="_CopyState" model="j.State" /></dd>
+            <dt>@L["Copies.Col.Source"]</dt><dd class="mat-mono md-path">@j.Source</dd>
+            <dt>@L["Copies.Col.Target"]</dt><dd class="mat-mono md-path">@j.Target</dd>
+            <dt>@L["Copies.Col.Blobs"]</dt>
+            <dd>
+                <div class="mat-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Model.Percent" aria-label="@L["Copies.Progress"]" data-value="@Model.Percent"><span class="mat-meter__fill"></span></div>
+                <small class="md-muted">@L["Copies.Progress.Text", j.BlobsCopied, j.BlobsSkipped, j.BlobsTotal, Ui.Bytes(j.BytesCopied)]</small>
+            </dd>
+            @if (j.Digest is { } digest)
+            {
+                <dt>@L["Tags.Digest"]</dt><dd class="md-digest">@digest</dd>
+            }
+            @if (!string.IsNullOrEmpty(j.Message))
+            {
+                <dt>@L["Copies.Message"]</dt><dd class="md-danger md-path">@j.Message</dd>
+            }
+            <dt>@L["Copies.Col.Started"]</dt><dd class="mat-mono">@Dates.Stamp(j.Created, Model.Zone)</dd>
+            <dt>@L["Copies.Finished"]</dt><dd class="mat-mono">@(j.Finished is null ? "–" : Dates.Stamp(j.Finished, Model.Zone))</dd>
+            <dt>@L["Copies.Owner"]</dt><dd>@j.Owner</dd>
+        </dl>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    <input type="hidden" name="Token" value="@j.Token" />
+    <md-buttons back="/Copies" delete-handler="@(Model.Running ? null : "Delete")" delete-label="@L["Copies.Delete"]" delete-confirm="@L["Copies.DeleteConfirm"]">
+        @if (j.State == CopyState.Failed)
+        {
+            <a class="mat-btn mat-btn--primary md-btn-collapse" href="/Copies/New" aria-label="@L["Copies.New"]" data-tip="@L["Copies.New"]">@Ui.Icon("copy")<span>@L["Copies.New"]</span></a>
+        }
+    </md-buttons>
+</form>

@@ -1,0 +1,78 @@
+@page "/Registries/Remote"
+@model MatRegistry.Pages.Registries.RemoteModel
+@{
+    var reg = Model.Access.Registry;
+    var m = Model.Manifest;
+    ViewData["Title"] = $"{Model.Repository}{(RegistryNames.IsDigest(Model.Reference) ? "@" + RegistryNames.Short(Model.Reference) : ":" + Model.Reference)}";
+    ViewData["PageSub"] = m is null ? reg.Name : L[m.Kind == ManifestKind.Index ? "Manifest.Kind.Index" : "Manifest.Kind.Image"].Value;
+    ViewData["NavKey"] = "registry-" + reg.Id;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Registries.Title"].Value, "/Registries"), (reg.Name, $"/Registries/View?id={reg.Id}"), (Model.Repository, Model.BrowseUrl), (Model.Reference, null) };
+}
+
+@if (Model.Error is { } error)
+{
+    <div class="mat-alert mat-alert--danger" role="alert">@Ui.Icon("alert")<div class="mat-alert__body">@error</div></div>
+    <div class="mat-btn-row"><a class="mat-btn mat-btn--secondary" href="@Model.BrowseUrl">@Ui.Icon("back")<span>@L["Common.Back"]</span></a></div>
+}
+else if (m is not null)
+{
+    <div class="mat-cols">
+        <div class="mat-col-12 mat-col-lg-7">
+            <div class="mat-card">
+                <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("digest")@L["Manifest.Title"]</h2></div>
+                <div class="mat-card__body">
+                    <dl class="mat-kv">
+                        <dt>@L["Tags.Digest"]</dt><dd class="md-digest">@m.Digest</dd>
+                        <dt>@L["Manifest.MediaType"]</dt><dd class="mat-mono md-path">@m.MediaType</dd>
+                        <dt>@L["Repositories.Col.Size"]</dt><dd>@Ui.Bytes(m.Size)</dd>
+                        <dt>@L["Registries.One"]</dt><dd><a href="/Registries/View?id=@reg.Id">@reg.Name</a> <span class="md-muted mat-mono">@reg.Url</span></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <section class="md-section md-mt">
+                <h2 class="md-section__title">@Ui.Icon("layers")@L[m.Kind == ManifestKind.Index ? "Manifest.Platforms" : "Manifest.Layers"]</h2>
+                <md-table caption="@L[m.Kind == ManifestKind.Index ? "Manifest.Platforms" : "Manifest.Layers"]">
+                    <thead><tr><th scope="col">@L[m.Kind == ManifestKind.Index ? "Manifest.Platform" : "Manifest.MediaType"]</th><th scope="col">@L["Tags.Digest"]</th><th scope="col" class="mat-num">@L["Repositories.Col.Size"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in m.Children)
+                        {
+                            <tr>
+                                <td data-label="@L[m.Kind == ManifestKind.Index ? "Manifest.Platform" : "Manifest.MediaType"]" class="mat-mono md-path">@(m.Kind == ManifestKind.Index ? (c.Platform == "unknown/unknown" ? L["Manifest.Attestation"].Value : c.Platform ?? "–") : c.MediaType)</td>
+                                <td data-label="@L["Tags.Digest"]">
+                                    @if (m.Kind == ManifestKind.Index)
+                                    {
+                                        <a class="md-digest" href="/Registries/Remote?id=@reg.Id&repository=@Uri.EscapeDataString(Model.Repository)&reference=@Uri.EscapeDataString(c.Digest)">@RegistryNames.Short(c.Digest)</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="md-digest" title="@c.Digest">@RegistryNames.Short(c.Digest)</span>
+                                    }
+                                </td>
+                                <td data-label="@L["Repositories.Col.Size"]" class="mat-num mat-mono">@Ui.Bytes(c.Size)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </md-table>
+            </section>
+
+            <form method="post" class="md-mt" novalidate>
+                <input type="hidden" name="digest" value="@m.Digest" />
+                <md-buttons back="@Model.BrowseUrl" delete-handler="@(Model.Access.Role >= AccessRole.Editor ? "Delete" : null)" delete-label="@L["Registries.Remote.Delete"]"
+                            delete-confirm="@L["Registries.Remote.DeleteConfirm", reg.Name]">
+                    <a class="mat-btn mat-btn--primary md-btn-collapse" href="/Copies/New?source=@reg.Id&repository=@Uri.EscapeDataString(Model.Repository)&reference=@Uri.EscapeDataString(Model.Reference)" aria-label="@L["Copies.New"]" data-tip="@L["Copies.New"]">@Ui.Icon("copy")<span>@L["Copies.New"]</span></a>
+                </md-buttons>
+            </form>
+        </div>
+        <div class="mat-col-12 mat-col-lg-5">
+            @if (m.Config is { } config)
+            {
+                <partial name="_ImageConfig" model="config" />
+            }
+            <div class="mat-card">
+                <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("code")JSON</h2></div>
+                <div class="mat-card__body"><pre class="md-json">@m.Json</pre></div>
+            </div>
+        </div>
+    </div>
+}

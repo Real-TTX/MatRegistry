@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MatRegistry/MatRegistry.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MatRegistry.Tests/MatRegistry.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,61 @@
+@page "/Repositories"
+@model MatRegistry.Pages.Repositories.IndexModel
+@{
+    ViewData["Title"] = L["Repositories.Title"].Value;
+    ViewData["NavKey"] = "repositories";
+    ViewData["SearchText"] = Model.Toolbar.Search;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Repositories.Title"].Value, null) };
+}
+
+<div class="mat-list">
+    <partial name="_Toolbar" model="Model.Toolbar" />
+
+    @if (Model.Items.Count == 0)
+    {
+        var first = Model.Toolbar.Total == 0;
+        <partial name="_Empty" model="@(new EmptyStateModel("box", L[first ? "Repositories.Empty" : "Lists.NoMatch"].Value, L[first ? "Repositories.EmptyText" : "Lists.ChangeTools"].Value, first, first ? "/Overview" : null, L["Repositories.HowToPush"].Value, Model.Toolbar.UrlReset()))" />
+    }
+    else
+    {
+        <md-table caption="@L["Repositories.Title"]">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Repositories.Col.Name"]</th>
+                    <th scope="col" class="mat-num">@L["Tags.Title"]</th>
+                    <th scope="col" class="mat-num mat-hide-sm">@L["Repositories.Col.Size"]</th>
+                    <th scope="col" class="mat-hide-md">@L["Repositories.Col.Pushed"]</th>
+                    <th scope="col" class="mat-num mat-hide-md">@L["Repositories.Col.Pulls"]</th>
+                    <th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Items)
+                {
+                    <tr>
+                        <td data-label="@L["Repositories.Col.Name"]">
+                            <a class="md-name md-path" href="/Repositories/View?id=@r.Id">@Ui.Icon(r.Kind == RegistryKind.Hosted ? "box" : "cache")<span>@r.FullName</span></a>
+                            @if (r.Kind == RegistryKind.Remote)
+                            {
+                                <small class="md-block-line md-muted">@L["Registries.Kind.Cache"]</small>
+                            }
+                        </td>
+                        <td data-label="@L["Tags.Title"]" class="mat-num mat-mono">@r.Tags</td>
+                        <td data-label="@L["Repositories.Col.Size"]" class="mat-num mat-mono mat-hide-sm">@Ui.Bytes(r.Size)</td>
+                        <td data-label="@L["Repositories.Col.Pushed"]" class="mat-mono mat-hide-md">@(r.LastPush is null ? "–" : Dates.Stamp(r.LastPush, Model.Zone))</td>
+                        <td data-label="@L["Repositories.Col.Pulls"]" class="mat-num mat-mono mat-hide-md">@r.Pulls.ToString("N0")</td>
+                        <td class="mat-table__cell-actions"><div class="mat-table__actions"><a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Repositories/View?id=@r.Id" aria-label="@L["Common.OpenNamed", r.FullName]" data-tip="@L["Common.Open"]">@Ui.Icon("chevron-right")</a></div></td>
+                    </tr>
+                }
+            </tbody>
+        </md-table>
+    }
+
+    <partial name="_Pager" model="Model.Pager" />
+
+    @if (Model.CanCopy)
+    {
+        <div class="mat-actions">
+            <a class="mat-btn mat-btn--primary" href="/Copies/New">@Ui.Icon("copy")<span>@L["Copies.New"]</span></a>
+        </div>
+    }
+</div>

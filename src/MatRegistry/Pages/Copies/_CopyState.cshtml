@@ -1,0 +1,17 @@
+@model CopyState
+@* the state of a copy as a pill: a word and a colour, never the colour alone *@
+@switch (Model)
+{
+    case CopyState.Waiting:
+        <span class="mat-pill mat-pill--plain">@L["Copies.State.Waiting"]</span>
+        break;
+    case CopyState.Running:
+        <span class="mat-pill mat-pill--info mat-pill--busy">@L["Copies.State.Running"]</span>
+        break;
+    case CopyState.Done:
+        <span class="mat-pill mat-pill--ok">@L["Copies.State.Done"]</span>
+        break;
+    default:
+        <span class="mat-pill mat-pill--error">@L["Copies.State.Failed"]</span>
+        break;
+}

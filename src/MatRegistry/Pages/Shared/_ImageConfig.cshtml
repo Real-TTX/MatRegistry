@@ -1,0 +1,86 @@
+@model ImageConfig
+@*
+    What the config of an image says: created, platform, entrypoint and command, user and folder, ports, volumes, environment, labels and the steps of the build.
+    Shared by the manifest of a repository and the manifest of a remote registry.
+*@
+<div class="mat-card">
+    <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("settings")@L["Manifest.Config"]</h2></div>
+    <div class="mat-card__body">
+        <dl class="mat-kv">
+            @if (Model.Created is { } created)
+            {
+                <dt>@L["Manifest.Built"]</dt><dd class="mat-mono">@created.ToString("yyyy-MM-dd HH:mm 'UTC'", System.Globalization.CultureInfo.InvariantCulture)</dd>
+            }
+            @if (ManifestDocument.PlatformOf(Model.Os, Model.Architecture, Model.Variant) is { } platform)
+            {
+                <dt>@L["Manifest.Platform"]</dt><dd class="mat-mono">@platform</dd>
+            }
+            @if (Model.Entrypoint.Count > 0)
+            {
+                <dt>Entrypoint</dt><dd class="mat-mono md-path">@string.Join(" ", Model.Entrypoint)</dd>
+            }
+            @if (Model.Cmd.Count > 0)
+            {
+                <dt>Cmd</dt><dd class="mat-mono md-path">@string.Join(" ", Model.Cmd)</dd>
+            }
+            @if (!string.IsNullOrEmpty(Model.User))
+            {
+                <dt>@L["Manifest.User"]</dt><dd class="mat-mono">@Model.User</dd>
+            }
+            @if (!string.IsNullOrEmpty(Model.WorkingDir))
+            {
+                <dt>@L["Manifest.WorkingDir"]</dt><dd class="mat-mono md-path">@Model.WorkingDir</dd>
+            }
+            @if (Model.ExposedPorts.Count > 0)
+            {
+                <dt>@L["Manifest.Ports"]</dt><dd><span class="md-pills">@foreach (var p in Model.ExposedPorts) { <span class="mat-pill mat-pill--plain">@p</span> }</span></dd>
+            }
+            @if (Model.Volumes.Count > 0)
+            {
+                <dt>@L["Manifest.Volumes"]</dt><dd class="mat-mono md-path">@string.Join(", ", Model.Volumes)</dd>
+            }
+            @if (!string.IsNullOrEmpty(Model.Author))
+            {
+                <dt>@L["Manifest.Author"]</dt><dd>@Model.Author</dd>
+            }
+        </dl>
+    </div>
+</div>
+
+@if (Model.Env.Count > 0)
+{
+    <div class="mat-card">
+        <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("terminal")@L["Manifest.Env"]</h2></div>
+        <div class="mat-card__body"><pre class="md-json">@string.Join("\n", Model.Env)</pre></div>
+    </div>
+}
+
+@if (Model.Labels.Count > 0)
+{
+    <div class="mat-card">
+        <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("tag")@L["Manifest.Labels"]</h2></div>
+        <div class="mat-card__body">
+            <dl class="mat-kv">
+                @foreach (var (key, value) in Model.Labels.OrderBy(l => l.Key, StringComparer.Ordinal))
+                {
+                    <dt class="mat-mono md-path">@key</dt><dd class="md-path">@value</dd>
+                }
+            </dl>
+        </div>
+    </div>
+}
+
+@if (Model.History.Count > 0)
+{
+    <div class="mat-card">
+        <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("list")@L["Manifest.History"]</h2></div>
+        <div class="mat-card__body">
+            <ol class="md-history">
+                @foreach (var step in Model.History)
+                {
+                    <li><code>@step.Step</code>@if (step.EmptyLayer) { <small>@L["Manifest.NoLayer"]</small> }</li>
+                }
+            </ol>
+        </div>
+    </div>
+}

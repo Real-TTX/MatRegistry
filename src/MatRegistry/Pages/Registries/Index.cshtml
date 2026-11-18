@@ -1,0 +1,105 @@
+@page "/Registries"
+@model MatRegistry.Pages.Registries.IndexModel
+@{
+    ViewData["Title"] = L["Registries.Title"].Value;
+    ViewData["PageSub"] = L["Registries.Sub"].Value;
+    ViewData["NavKey"] = "registries";
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Registries.Title"].Value, null) };
+}
+
+<div class="mat-list">
+    <partial name="_Toolbar" model="Model.Toolbar" />
+
+    @if (Model.Items.Count == 0)
+    {
+        var first = Model.Toolbar.Total == 0;
+        <partial name="_Empty" model="@(new EmptyStateModel("registry", L[first ? "Registries.Empty" : "Lists.NoMatch"].Value, L[first ? (Model.IsAdmin ? "Registries.EmptyText.Admin" : "Registries.EmptyText") : "Lists.ChangeTools"].Value, first && Model.IsAdmin, "/Registries/Edit", L["Registries.New"].Value, Model.Toolbar.UrlReset()))" />
+    }
+    else
+    {
+        <md-table caption="@L["Registries.Title"]">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Common.Name"]</th>
+                    <th scope="col">@L["Registries.Col.Kind"]</th>
+                    <th scope="col" class="mat-hide-md">@L["Registries.Col.Address"]</th>
+                    <th scope="col" class="mat-num">@L["Repositories.Title"]</th>
+                    <th scope="col" class="mat-num mat-hide-sm">@L["Repositories.Col.Size"]</th>
+                    <th scope="col">@L["Common.Status"]</th>
+                    <th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Items)
+                {
+                    <tr>
+                        <td data-label="@L["Common.Name"]">
+                            <a class="md-name" href="/Registries/View?id=@r.Id">@Ui.Icon(r.Kind == RegistryKind.Hosted ? "registry" : "link")<span>@r.Name</span></a>
+                            @if (!string.IsNullOrEmpty(r.Description))
+                            {
+                                <small class="md-block-line md-muted">@r.Description</small>
+                            }
+                        </td>
+                        <td data-label="@L["Registries.Col.Kind"]">
+                            <span class="md-pills">
+                                <span class="mat-pill @(r.Kind == RegistryKind.Hosted ? "mat-pill--accent" : "mat-pill--plain")">@L[r.Kind == RegistryKind.Hosted ? "Registries.Kind.Hosted" : "Registries.Kind.Remote"]</span>
+                                @if (r.ProxyEnabled)
+                                {
+                                    <span class="mat-pill mat-pill--info">@L["Registries.Kind.Cache"]</span>
+                                }
+                                @if (r.Visibility == RegistryVisibility.Public)
+                                {
+                                    <span class="mat-pill mat-pill--plain">@L["Registries.Public"]</span>
+                                }
+                            </span>
+                        </td>
+                        <td data-label="@L["Registries.Col.Address"]" class="mat-mono mat-hide-md md-path">@(r.Url ?? "–")</td>
+                        <td data-label="@L["Repositories.Title"]" class="mat-num mat-mono">@r.Repositories</td>
+                        <td data-label="@L["Repositories.Col.Size"]" class="mat-num mat-mono mat-hide-sm">@Ui.Bytes(r.Size)</td>
+                        <td data-label="@L["Common.Status"]">
+                            @if (!r.IsActive)
+                            {
+                                <span class="mat-pill mat-pill--warn">@L["Registries.Off"]</span>
+                            }
+                            else if (r.Kind == RegistryKind.Hosted)
+                            {
+                                <span class="mat-pill mat-pill--ok">@L["Common.Active"]</span>
+                            }
+                            else if (r.IsReachable is true)
+                            {
+                                <span class="mat-pill mat-pill--ok" title="@r.LastCheckResult">@L["Registries.Reachable"]</span>
+                            }
+                            else if (r.IsReachable is false)
+                            {
+                                <span class="mat-pill mat-pill--error" title="@r.LastCheckResult">@L["Registries.Unreachable"]</span>
+                            }
+                            else
+                            {
+                                <span class="mat-pill mat-pill--plain">@L["Registries.Unchecked"]</span>
+                            }
+                        </td>
+                        <td class="mat-table__cell-actions">
+                            <div class="mat-table__actions">
+                                @if (Model.IsAdmin)
+                                {
+                                    <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Registries/Edit?id=@r.Id" aria-label="@L["Common.EditNamed", r.Name]" data-tip="@L["Common.Edit"]">@Ui.Icon("edit")</a>
+                                }
+                                <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Registries/View?id=@r.Id" aria-label="@L["Common.OpenNamed", r.Name]" data-tip="@L["Common.Open"]">@Ui.Icon("chevron-right")</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </md-table>
+    }
+
+    <partial name="_Pager" model="Model.Pager" />
+
+    @if (Model.IsAdmin)
+    {
+        <div class="mat-actions">
+            <a class="mat-btn mat-btn--primary" href="/Registries/Edit">@Ui.Icon("plus")<span>@L["Registries.New"]</span></a>
+            <a class="mat-btn mat-btn--secondary" href="/Registries/Edit?kind=Remote">@Ui.Icon("link")<span>@L["Registries.Bind"]</span></a>
+        </div>
+    }
+</div>

@@ -1,0 +1,50 @@
+{
+  "Data.Title": {
+    "en": "Your data",
+    "de": "Deine Daten"
+  },
+  "Data.Export": {
+    "en": "Export",
+    "de": "Exportieren"
+  },
+  "Data.Export.Text": {
+    "en": "Everything MatRegistry keeps about you in one JSON file: your account and settings, your roles in the registries, your access tokens (name and dates, never the secret), your copies, your activity and your sessions – without passwords or keys.",
+    "de": "Alles, was MatRegistry über dich speichert, in einer JSON-Datei: Konto und Einstellungen, deine Rollen in den Registries, deine Zugriffstokens (Name und Daten, nie das Geheimnis), deine Kopien, deine Aktivität und deine Sitzungen – ohne Passwörter oder Schlüssel."
+  },
+  "Data.Export.Button": {
+    "en": "Download (JSON)",
+    "de": "Herunterladen (JSON)"
+  },
+  "Data.Delete": {
+    "en": "Delete account",
+    "de": "Konto löschen"
+  },
+  "Data.Delete.Text": {
+    "en": "Deletes your account for good: your access tokens (they stop working at once), your roles, your copies and your activity. The images you pushed stay in their registries. This cannot be undone – download your data first if you want to keep it.",
+    "de": "Löscht dein Konto endgültig: deine Zugriffstokens (sie funktionieren sofort nicht mehr), deine Rollen, deine Kopien und deine Aktivität. Die Images, die du gepusht hast, bleiben in ihren Registries. Das lässt sich nicht rückgängig machen – lade deine Daten vorher herunter, wenn du sie behalten willst."
+  },
+  "Data.Delete.Password": {
+    "en": "Your password",
+    "de": "Dein Passwort"
+  },
+  "Data.Delete.Button": {
+    "en": "Delete account",
+    "de": "Konto löschen"
+  },
+  "Data.Delete.Confirm": {
+    "en": "Delete the account {0} and all its data for good?",
+    "de": "Das Konto {0} und alle seine Daten endgültig löschen?"
+  },
+  "Data.Delete.WrongPassword": {
+    "en": "The password is not right.",
+    "de": "Das Passwort stimmt nicht."
+  },
+  "Data.Delete.LastAdmin": {
+    "en": "You are the last administrator. Make someone else an administrator first.",
+    "de": "Du bist der letzte Administrator. Mach zuerst jemand anderen zum Administrator."
+  },
+  "Data.Delete.Done": {
+    "en": "Your account and its data are deleted.",
+    "de": "Dein Konto und seine Daten sind gelöscht."
+  }
+}

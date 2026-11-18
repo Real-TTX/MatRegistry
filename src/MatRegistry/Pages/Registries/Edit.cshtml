@@ -1,0 +1,99 @@
+@page "/Registries/Edit"
+@model MatRegistry.Pages.Registries.EditModel
+@{
+    var title = Model.IsNew ? L[Model.Kind == RegistryKind.Remote ? "Registries.Bind" : "Registries.New"].Value : Model.Name;
+    ViewData["Title"] = title;
+    ViewData["NavKey"] = Model.IsNew ? "registries" : "registry-" + Model.Id;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Registries.Title"].Value, "/Registries"), (Model.IsNew ? L["Common.New"].Value : Model.Name, null) };
+    var s = Model.Stored;
+}
+
+@if (!Model.IsNew)
+{
+    <partial name="_RegistryTabs" model='(Model.Id!.Value, "general")' />
+}
+
+<div class="mat-cols">
+    <div class="mat-col-12 mat-col-lg-7">
+        <form class="mat-form" method="post" novalidate>
+            <partial name="_FormSummary" model="ViewData.ModelState" />
+            <div class="mat-card">
+                <div class="mat-card__body mat-form">
+                    <md-field name="Kind" kind="radios" label="@L["Registries.Col.Kind"]" value="@Model.Kind" options="Model.Kinds" />
+                    <md-field name="Name" label="@L["Common.Name"]" required value="@Model.Name" maxlength="64" mono autocomplete="off" pattern="[a-z0-9]+([._\-][a-z0-9]+)*"
+                              hint="@L["Registries.Name.Hint", Model.Host]" msg-required="@L["Common.NameRequired"]" />
+                    <md-field name="Description" kind="textarea" label="@L["Common.Description"]" value="@Model.Description" maxlength="1000" optional rows="2" />
+                    <md-field name="Visibility" kind="radios" label="@L["Registries.Visibility"]" value="@Model.Visibility" options="Model.Visibilities" />
+                    <md-field name="IsActive" kind="switch" label="@L["Registries.Active"]" value="@Model.IsActive.ToString()" hint="@L["Registries.Active.Hint"]" />
+                </div>
+            </div>
+
+            <div class="mat-card" data-show-if="Kind" data-show-value="Remote">
+                <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("link")@L["Registries.Remote"]</h2></div>
+                <div class="mat-card__body mat-form">
+                    <md-field name="Address" inputmode="url" label="@L["Registries.Url"]" value="@Model.Address" maxlength="500" mono placeholder="https://registry-1.docker.io" autocomplete="off" hint="@L["Registries.Url.Hint"]" />
+                    <div class="mat-form__grid">
+                        <md-field name="Username" label="@L["Registries.Username"]" value="@Model.Username" maxlength="255" optional autocomplete="off" />
+                        <md-field name="Password" kind="password" label="@L["Registries.Password"]" optional autocomplete="new-password"
+                                  hint="@L[s?.HasPassword == true ? "Registries.Password.Keep" : "Registries.Password.Hint"]" />
+                    </div>
+                    @if (s?.HasPassword == true)
+                    {
+                        <md-field name="ClearPassword" kind="switch" label="@L["Registries.Password.Clear"]" value="false" />
+                    }
+                    <md-field name="ProxyEnabled" kind="switch" label="@L["Registries.Proxy"]" value="@Model.ProxyEnabled.ToString()" hint="@L["Registries.Proxy.Hint", Model.Host, string.IsNullOrEmpty(Model.Name) ? "dockerhub" : Model.Name]" />
+                    <md-field name="CacheMinutes" kind="number" label="@L["Registries.CacheMinutes"]" value="@Model.CacheMinutes" min="1" max="10080" inputmode="numeric" hint="@L["Registries.CacheMinutes.Hint"]" />
+                    <md-field name="SkipTlsVerify" kind="switch" label="@L["Registries.SkipTls"]" value="@Model.SkipTlsVerify.ToString()" hint="@L["Registries.SkipTls.Hint"]" />
+                </div>
+            </div>
+
+            <md-buttons save="@L[Model.IsNew ? (Model.Kind == RegistryKind.Remote ? "Registries.Bind" : "Registries.Create") : "Common.Save"]" back="/Registries"
+                        delete-handler="@(Model.IsNew ? null : "Delete")" delete-label="@L["Registries.Delete"]" delete-confirm="@L["Registries.DeleteConfirm", Model.Name, s?.Repositories ?? 0]">
+                @if (!Model.IsNew && s?.Kind == RegistryKind.Remote)
+                {
+                    <button type="submit" class="mat-btn mat-btn--secondary md-btn-collapse" formnovalidate formaction="@ButtonRowTagHelper.HandlerUrl(HttpContext.Request, "Test")" aria-label="@L["Registries.Test"]" data-tip="@L["Registries.Test"]">@Ui.Icon("refresh")<span>@L["Registries.Test"]</span></button>
+                }
+            </md-buttons>
+        </form>
+    </div>
+    <div class="mat-col-12 mat-col-lg-5">
+        <div class="mat-card">
+            <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("info")@L["Registries.HowTo"]</h2></div>
+            <div class="mat-card__body">
+                <p>@L["Registries.HowTo.Hosted"]</p>
+                <p>@L["Registries.HowTo.Remote"]</p>
+                <p class="md-muted">@L["Registries.HowTo.Examples"]</p>
+            </div>
+        </div>
+        @if (s is { Kind: RegistryKind.Remote })
+        {
+            <div class="mat-card">
+                <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("activity")@L["Registries.LastCheck"]</h2></div>
+                <div class="mat-card__body">
+                    <dl class="mat-kv">
+                        <dt>@L["Common.Status"]</dt>
+                        <dd>
+                            @if (s.IsReachable is true)
+                            {
+                                <span class="mat-pill mat-pill--ok">@L["Registries.Reachable"]</span>
+                            }
+                            else if (s.IsReachable is false)
+                            {
+                                <span class="mat-pill mat-pill--error">@L["Registries.Unreachable"]</span>
+                            }
+                            else
+                            {
+                                <span class="mat-pill mat-pill--plain">@L["Registries.Unchecked"]</span>
+                            }
+                        </dd>
+                        <dt>@L["Registries.CheckedAt"]</dt><dd class="mat-mono">@(s.LastCheck is null ? L["Common.Never"].Value : Dates.Stamp(s.LastCheck, Model.Zone))</dd>
+                        @if (!string.IsNullOrEmpty(s.LastCheckResult))
+                        {
+                            <dt>@L["Registries.Answer"]</dt><dd class="md-path">@s.LastCheckResult</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        }
+    </div>
+</div>

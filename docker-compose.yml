@@ -1,0 +1,42 @@
+# MatRegistry - Release (branch main, image :latest)
+#   docker compose up -d        ->  http://localhost:4780
+# The first account that registers is the administrator. Then Registries -> New registry (your own) or Bind a registry (Docker Hub, GHCR, ...).
+# Docker talks to the same port: docker login localhost:4780 (Docker allows plain http for localhost; on another host put MatRegistry behind a TLS proxy).
+# No variable is needed: MatRegistry does its whole job without them. Mattiverse connects the rest by itself (see README); without it, these are optional
+# under "environment:" of web:
+#   MAT_PUBLIC_URL                public address (pull commands, the token service, links in mails); fixed on Administration -> System while set
+#   MAT_API_KEY                   the key of the platform API (/api) for a broker such as Mattiverse
+#   MAT_FRAME_ANCESTORS           origins that may show MatRegistry in a frame (Mattiverse)
+#   MATIDENTITY_*, MATSMTP_*      sign-in through MatIdentity, mail through MatSMTP
+name: matregistry
+
+services:
+  web:
+    image: ghcr.io/real-ttx/matregistry:latest
+    restart: unless-stopped
+    ports:
+      - "4780:4780"
+    volumes:
+      - web-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: matregistry
+      POSTGRES_USER: matregistry
+      POSTGRES_PASSWORD: matregistry
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matregistry -d matregistry"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  web-data:
+  db-data:

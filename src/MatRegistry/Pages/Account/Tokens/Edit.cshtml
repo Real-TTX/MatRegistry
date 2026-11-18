@@ -1,0 +1,59 @@
+@page "/Account/Tokens/Edit"
+@model MatRegistry.Pages.Account.Tokens.EditModel
+@{
+    var existing = Model.Existing;
+    var created = Model.Created;
+    ViewData["Title"] = existing?.Name ?? created?.Name ?? L["Tokens.New"].Value;
+    ViewData["Width"] = "narrow";
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Settings.Title"].Value, "/Account"), (L["Tokens.Title"].Value, "/Account/Tokens"), (existing?.Name ?? L["Common.New"].Value, null) };
+}
+
+@if (created is not null)
+{
+    var commands = new List<(string, string)> { (L["Tokens.Secret"].Value, created.Secret), (L["Overview.Login"].Value, $"docker login {Model.Host} -u {Model.UserName}") };
+    <div class="mat-alert mat-alert--success" role="status">@Ui.Icon("check-circle")<div class="mat-alert__body">@L["Tokens.Created"]</div></div>
+    <div class="mat-card md-secret">
+        <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("key")@created.Name</h2></div>
+        <div class="mat-card__body">
+            <partial name="_Commands" model="commands" />
+            <p class="md-muted md-mt">@L["Tokens.Once"]</p>
+        </div>
+    </div>
+    <div class="mat-btn-row">
+        <a class="mat-btn mat-btn--primary" href="/Account/Tokens">@Ui.Icon("check")<span>@L["Tokens.Done"]</span></a>
+    </div>
+}
+else if (existing is not null)
+{
+    <form method="post" novalidate>
+        <input type="hidden" name="Token" value="@existing.Token" />
+        <div class="mat-card">
+            <div class="mat-card__body">
+                <dl class="mat-kv">
+                    <dt>@L["Common.Name"]</dt><dd>@existing.Name</dd>
+                    <dt>@L["Tokens.Prefix"]</dt><dd class="mat-mono">@existing.SecretPrefix…</dd>
+                    <dt>@L["Tokens.Scope"]</dt><dd>@L["Tokens.Scope." + existing.Scope]</dd>
+                    <dt>@L["Tokens.Created"]</dt><dd class="mat-mono">@Dates.Stamp(existing.Created, Model.Zone)</dd>
+                    <dt>@L["Tokens.Expires"]</dt><dd class="mat-mono">@(existing.IsExpired ? L["Tokens.Expired"].Value : existing.Expires is null ? L["Tokens.NoExpiry"].Value : Dates.Stamp(existing.Expires, Model.Zone))</dd>
+                    <dt>@L["Tokens.LastUsed"]</dt><dd class="mat-mono">@(existing.LastUsed is null ? L["Common.Never"].Value : Dates.Stamp(existing.LastUsed, Model.Zone))</dd>
+                </dl>
+                <p class="md-muted">@L["Tokens.NoSecretAgain"]</p>
+            </div>
+        </div>
+        <md-buttons back="/Account/Tokens" delete-handler="Delete" delete-label="@L["Tokens.Delete"]" delete-confirm="@L["Tokens.DeleteConfirm", existing.Name]" />
+    </form>
+}
+else
+{
+    <form class="mat-form" method="post" novalidate>
+        <partial name="_FormSummary" model="ViewData.ModelState" />
+        <div class="mat-card">
+            <div class="mat-card__body mat-form">
+                <md-field name="Name" label="@L["Common.Name"]" required value="@Model.Name" maxlength="120" placeholder="@L["Tokens.Name.Placeholder"]" autocomplete="off" msg-required="@L["Common.NameRequired"]" hint="@L["Tokens.Name.Hint"]" />
+                <md-field name="Scope" kind="radios" label="@L["Tokens.Scope"]" value="@Model.Scope" options="Model.Scopes" />
+                <md-field name="Expiry" kind="radios" label="@L["Tokens.Expires"]" value="@Model.Expiry" options="Model.Expiries" />
+            </div>
+        </div>
+        <md-buttons save="@L["Tokens.Create"]" save-icon="key" back="/Account/Tokens" />
+    </form>
+}

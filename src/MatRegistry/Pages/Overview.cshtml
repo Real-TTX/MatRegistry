@@ -1,0 +1,73 @@
+@page "/Overview"
+@model MatRegistry.Pages.OverviewModel
+@{
+    ViewData["Title"] = L["Overview.Title"].Value;
+    ViewData["NavKey"] = "overview";
+    var n = Model.Numbers;
+    var commands = new List<(string, string)> { (L["Overview.Login"].Value, $"docker login {Model.Host} -u {Model.UserName}") };
+    if (Model.PushRegistry is { } push)
+    {
+        commands.Add((L["Overview.Push"].Value, $"docker tag myapp:1.0 {Model.Host}/{push}/myapp:1.0"));
+        commands.Add((string.Empty, $"docker push {Model.Host}/{push}/myapp:1.0"));
+    }
+
+    if (Model.CacheRegistry is { } cache)
+    {
+        commands.Add((L["Overview.PullCache"].Value, $"docker pull {Model.Host}/{cache}/nginx:latest"));
+    }
+}
+
+<div class="mat-stats">
+    <a class="mat-stat" href="/Registries">@Ui.Icon("registry", "mat-stat__icon")<span class="mat-stat__label">@L["Registries.Title"]</span><span class="mat-stat__value">@n.Registries.ToString("N0")</span></a>
+    <a class="mat-stat" href="/Repositories">@Ui.Icon("box", "mat-stat__icon")<span class="mat-stat__label">@L["Repositories.Title"]</span><span class="mat-stat__value">@n.Repositories.ToString("N0")</span></a>
+    <a class="mat-stat" href="/Repositories?sort=tags">@Ui.Icon("tag", "mat-stat__icon")<span class="mat-stat__label">@L["Tags.Title"]</span><span class="mat-stat__value">@n.Tags.ToString("N0")</span></a>
+    <a class="mat-stat" href="/Repositories?sort=size">@Ui.Icon("hard-drive", "mat-stat__icon")<span class="mat-stat__label">@L["Overview.Space"]</span><span class="mat-stat__value">@Ui.Bytes(n.Size)</span></a>
+</div>
+
+<div class="mat-cols md-mt">
+    <div class="mat-col-12 mat-col-lg-7">
+        <section class="md-section">
+            <h2 class="md-section__title">@Ui.Icon("upload")@L["Overview.Recent"]</h2>
+            @if (n.Recent.Count == 0)
+            {
+                <div class="mat-empty mat-empty--framed">
+                    <span class="mat-empty__icon">@Ui.Icon("box")</span>
+                    <div class="mat-empty__title">@L["Overview.Recent.Empty"]</div>
+                    <p>@L[n.Registries == 0 ? (Model.IsAdmin ? "Overview.NoRegistry.Admin" : "Overview.NoRegistry") : "Overview.Recent.EmptyText"]</p>
+                    @if (n.Registries == 0 && Model.IsAdmin)
+                    {
+                        <a class="mat-btn mat-btn--primary" href="/Registries/Edit">@Ui.Icon("plus")<span>@L["Registries.New"]</span></a>
+                    }
+                </div>
+            }
+            else
+            {
+                <md-table caption="@L["Overview.Recent"]">
+                    <thead><tr><th scope="col">@L["Repositories.Col.Name"]</th><th scope="col" class="mat-num">@L["Tags.Title"]</th><th scope="col" class="mat-hide-sm">@L["Repositories.Col.Pushed"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in n.Recent)
+                        {
+                            <tr>
+                                <td data-label="@L["Repositories.Col.Name"]"><a class="md-name md-path" href="/Repositories/View?id=@r.Id">@Ui.Icon(r.Kind == RegistryKind.Hosted ? "box" : "cache")<span>@r.FullName</span></a></td>
+                                <td data-label="@L["Tags.Title"]" class="mat-num mat-mono">@r.Tags</td>
+                                <td data-label="@L["Repositories.Col.Pushed"]" class="mat-mono mat-hide-sm">@Dates.Stamp(r.LastPush, Model.Zone)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </md-table>
+            }
+        </section>
+    </div>
+    <div class="mat-col-12 mat-col-lg-5">
+        <div class="mat-card">
+            <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("terminal")@L["Overview.Start"]</h2></div>
+            <div class="mat-card__body">
+                <partial name="_Commands" model="commands" />
+                <p class="md-muted md-mt">@L[Model.Tokens == 0 ? "Overview.Token.None" : "Overview.Token.Some", Model.Tokens]</p>
+                <div class="mat-btn-row">
+                    <a class="mat-btn mat-btn--secondary" href="/Account/Tokens/Edit">@Ui.Icon("key")<span>@L["Tokens.New"]</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,29 @@
+@page "/Copies/New"
+@model MatRegistry.Pages.Copies.NewModel
+@{
+    ViewData["Title"] = L["Copies.New"].Value;
+    ViewData["NavKey"] = "copies";
+    ViewData["Width"] = "narrow";
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Copies.Title"].Value, "/Copies"), (L["Common.New"].Value, null) };
+}
+
+<form class="mat-form" method="post" novalidate>
+    <partial name="_FormSummary" model="ViewData.ModelState" />
+    <div class="mat-card">
+        <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("download")@L["Copies.From"]</h2></div>
+        <div class="mat-card__body mat-form">
+            <md-field name="SourceRegistryId" kind="select" label="@L["Registries.One"]" value="@Model.SourceRegistryId" options="Model.Sources" required msg-required="@L["Copies.Source.Invalid"]" />
+            <md-field name="SourceRepository" label="@L["Copies.Repository"]" value="@Model.SourceRepository" required maxlength="255" mono autocomplete="off" placeholder="library/nginx" hint="@L["Copies.Repository.Hint"]" />
+            <md-field name="SourceReference" label="@L["Copies.Reference"]" value="@Model.SourceReference" required maxlength="128" mono autocomplete="off" hint="@L["Copies.Reference.Hint"]" />
+        </div>
+    </div>
+    <div class="mat-card">
+        <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("upload")@L["Copies.To"]</h2></div>
+        <div class="mat-card__body mat-form">
+            <md-field name="TargetRegistryId" kind="select" label="@L["Registries.One"]" value="@Model.TargetRegistryId" options="Model.Targets" required msg-required="@L["Copies.Target.Invalid"]" />
+            <md-field name="TargetRepository" label="@L["Copies.Repository"]" value="@Model.TargetRepository" required maxlength="255" mono autocomplete="off" pattern="[a-z0-9]+([._\/\-][a-z0-9]+)*" hint="@L["Copies.TargetRepository.Hint"]" />
+            <md-field name="TargetTag" label="@L["Copies.Tag"]" value="@Model.TargetTag" optional maxlength="128" mono autocomplete="off" hint="@L["Copies.Tag.Hint"]" />
+        </div>
+    </div>
+    <md-buttons save="@L["Copies.Start"]" save-icon="copy" back="/Copies" />
+</form>

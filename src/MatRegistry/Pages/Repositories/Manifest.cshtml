@@ -1,0 +1,154 @@
+@page "/Repositories/Manifest"
+@model MatRegistry.Pages.Repositories.ManifestModel
+@{
+    var r = Model.Repository;
+    var m = Model.Manifest;
+    ViewData["Title"] = m.Tags.Count > 0 ? $"{r.Name}:{m.Tags[0]}" : RegistryNames.Short(m.Digest);
+    ViewData["PageSub"] = L[m.Kind == ManifestKind.Index ? "Manifest.Kind.Index" : m.ArtifactType is null ? "Manifest.Kind.Image" : "Manifest.Kind.Artifact"].Value;
+    ViewData["NavKey"] = "repositories";
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Repositories.Title"].Value, "/Repositories"), (r.FullName, $"/Repositories/View?id={r.Id}"), (RegistryNames.Short(m.Digest), null) };
+    var commands = new List<(string, string)> { (L["Manifest.PullDigest"].Value, $"docker pull {Model.Host}/{r.FullName}@{m.Digest}") };
+}
+
+<div class="mat-cols">
+    <div class="mat-col-12 mat-col-lg-7">
+        <div class="mat-card">
+            <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("digest")@L["Manifest.Title"]</h2></div>
+            <div class="mat-card__body">
+                <dl class="mat-kv">
+                    <dt>@L["Tags.Digest"]</dt><dd class="md-digest">@m.Digest</dd>
+                    <dt>@L["Manifest.MediaType"]</dt><dd class="mat-mono md-path">@m.MediaType</dd>
+                    @if (m.Platform is { } platform)
+                    {
+                        <dt>@L["Manifest.Platform"]</dt><dd class="mat-mono">@platform</dd>
+                    }
+                    @if (m.ArtifactType is { } artifact)
+                    {
+                        <dt>@L["Manifest.ArtifactType"]</dt><dd class="mat-mono md-path">@artifact</dd>
+                    }
+                    <dt>@L["Repositories.Col.Size"]</dt><dd>@(m.TotalSize > 0 ? Ui.Bytes(m.TotalSize) : "–") <small class="md-muted">(@L["Manifest.ManifestSize", Ui.Bytes(m.Size)])</small></dd>
+                    <dt>@L["Tags.Title"]</dt>
+                    <dd>
+                        @if (m.Tags.Count == 0)
+                        {
+                            <span class="md-muted">@L["Manifest.Untagged"]</span>
+                        }
+                        else
+                        {
+                            <span class="md-pills">@foreach (var t in m.Tags) { <span class="mat-pill mat-pill--accent">@t</span> }</span>
+                        }
+                    </dd>
+                    <dt>@L["Manifest.Pushed"]</dt><dd class="mat-mono">@Dates.Stamp(m.Pushed, Model.Zone)</dd>
+                    <dt>@L["Repositories.LastPull"]</dt><dd class="mat-mono">@(m.LastPull is null ? L["Common.Never"].Value : Dates.Stamp(m.LastPull, Model.Zone))</dd>
+                    @if (m.Subject is { } subject)
+                    {
+                        <dt>@L["Manifest.Subject"]</dt><dd><a class="md-digest" href="/Repositories/Manifest?id=@r.Id&digest=@Uri.EscapeDataString(subject)">@subject</a></dd>
+                    }
+                </dl>
+                <div class="md-mt"><partial name="_Commands" model="commands" /></div>
+            </div>
+        </div>
+
+        @if (m.Kind == ManifestKind.Index)
+        {
+            <section class="md-section md-mt">
+                <h2 class="md-section__title">@Ui.Icon("layers")@L["Manifest.Platforms"]</h2>
+                <md-table caption="@L["Manifest.Platforms"]">
+                    <thead><tr><th scope="col">@L["Manifest.Platform"]</th><th scope="col">@L["Tags.Digest"]</th><th scope="col" class="mat-num">@L["Repositories.Col.Size"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in m.References)
+                        {
+                            <tr>
+                                <td data-label="@L["Manifest.Platform"]" class="mat-mono">@(c.Platform == "unknown/unknown" ? L["Manifest.Attestation"].Value : c.Platform ?? "–")</td>
+                                <td data-label="@L["Tags.Digest"]">
+                                    @if (c.Present)
+                                    {
+                                        <a class="md-digest" href="/Repositories/Manifest?id=@r.Id&digest=@Uri.EscapeDataString(c.Digest)">@RegistryNames.Short(c.Digest)</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="md-digest md-muted" title="@L["Manifest.NotHere"]">@RegistryNames.Short(c.Digest)</span>
+                                    }
+                                </td>
+                                <td data-label="@L["Repositories.Col.Size"]" class="mat-num mat-mono">@Ui.Bytes(c.Size)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </md-table>
+            </section>
+        }
+        else
+        {
+            <section class="md-section md-mt">
+                <h2 class="md-section__title">@Ui.Icon("layers")@L["Manifest.Layers"]</h2>
+                <md-table caption="@L["Manifest.Layers"]">
+                    <thead><tr><th scope="col" class="mat-num">#</th><th scope="col">@L["Tags.Digest"]</th><th scope="col" class="mat-hide-sm">@L["Manifest.MediaType"]</th><th scope="col" class="mat-num">@L["Repositories.Col.Size"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var l in m.References)
+                        {
+                            <tr>
+                                <td data-label="#" class="mat-num mat-mono">@(l.Kind == ReferenceKind.Config ? "cfg" : l.Position.ToString())</td>
+                                <td data-label="@L["Tags.Digest"]"><span class="md-digest @(l.Present ? "" : "md-muted")" title="@l.Digest">@RegistryNames.Short(l.Digest)</span></td>
+                                <td data-label="@L["Manifest.MediaType"]" class="mat-mono mat-hide-sm md-path">@l.MediaType</td>
+                                <td data-label="@L["Repositories.Col.Size"]" class="mat-num mat-mono">@Ui.Bytes(l.Size)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </md-table>
+            </section>
+        }
+
+        @if (m.Referrers.Count > 0)
+        {
+            <section class="md-section md-mt">
+                <h2 class="md-section__title">@Ui.Icon("link")@L["Manifest.Referrers"]</h2>
+                <md-table caption="@L["Manifest.Referrers"]">
+                    <thead><tr><th scope="col">@L["Manifest.ArtifactType"]</th><th scope="col">@L["Tags.Digest"]</th><th scope="col" class="mat-hide-sm">@L["Manifest.Pushed"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var x in m.Referrers)
+                        {
+                            <tr>
+                                <td data-label="@L["Manifest.ArtifactType"]" class="mat-mono md-path">@(x.ArtifactType ?? "–")</td>
+                                <td data-label="@L["Tags.Digest"]"><a class="md-digest" href="/Repositories/Manifest?id=@r.Id&digest=@Uri.EscapeDataString(x.Digest)">@RegistryNames.Short(x.Digest)</a></td>
+                                <td data-label="@L["Manifest.Pushed"]" class="mat-mono mat-hide-sm">@Dates.Stamp(x.Created, Model.Zone)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </md-table>
+            </section>
+        }
+
+        <form method="post" class="md-mt" novalidate>
+            <input type="hidden" name="Id" value="@r.Id" />
+            <input type="hidden" name="Digest" value="@m.Digest" />
+            <md-buttons back="/Repositories/View?id=@r.Id" delete-handler="@(r.CanWrite ? "Delete" : null)" delete-label="@L["Manifest.Delete"]"
+                        delete-confirm="@L[m.Tags.Count == 0 ? "Manifest.DeleteConfirm" : "Manifest.DeleteConfirmTags", string.Join(", ", m.Tags)]">
+                <a class="mat-btn mat-btn--secondary md-btn-collapse" href="/Copies/New?source=@r.RegistryId&repository=@Uri.EscapeDataString(r.Name)&reference=@Uri.EscapeDataString(m.Digest)" aria-label="@L["Copies.New"]" data-tip="@L["Copies.New"]">@Ui.Icon("copy")<span>@L["Copies.New"]</span></a>
+            </md-buttons>
+        </form>
+    </div>
+    <div class="mat-col-12 mat-col-lg-5">
+        @if (m.Config is { } config)
+        {
+            <partial name="_ImageConfig" model="config" />
+        }
+        @if (m.Annotations.Count > 0)
+        {
+            <div class="mat-card">
+                <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("info")@L["Manifest.Annotations"]</h2></div>
+                <div class="mat-card__body">
+                    <dl class="mat-kv">
+                        @foreach (var (key, value) in m.Annotations.OrderBy(a => a.Key, StringComparer.Ordinal))
+                        {
+                            <dt class="mat-mono md-path">@key</dt><dd class="md-path">@value</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        }
+        <div class="mat-card">
+            <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("code")JSON</h2></div>
+            <div class="mat-card__body"><pre class="md-json">@m.Json</pre></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,56 @@
+@page "/Copies"
+@model MatRegistry.Pages.Copies.IndexModel
+@{
+    ViewData["Title"] = L["Copies.Title"].Value;
+    ViewData["PageSub"] = L["Copies.Sub"].Value;
+    ViewData["NavKey"] = "copies";
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Copies.Title"].Value, null) };
+}
+@section Head {
+    @if (Model.Running)
+    {
+        @* while a copy runs the list follows it (no script needed) *@
+        <meta http-equiv="refresh" content="5" />
+    }
+}
+
+<div class="mat-list">
+    <partial name="_Toolbar" model="Model.Toolbar" />
+    @if (Model.Items.Count == 0)
+    {
+        var first = Model.Toolbar.Total == 0;
+        <partial name="_Empty" model="@(new EmptyStateModel("copy", L[first ? "Copies.Empty" : "Lists.NoMatch"].Value, L[first ? "Copies.EmptyText" : "Lists.ChangeTools"].Value, first, "/Copies/New", L["Copies.New"].Value, Model.Toolbar.UrlReset()))" />
+    }
+    else
+    {
+        <md-table caption="@L["Copies.Title"]">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Copies.Col.Source"]</th>
+                    <th scope="col" class="mat-hide-sm">@L["Copies.Col.Target"]</th>
+                    <th scope="col">@L["Common.Status"]</th>
+                    <th scope="col" class="mat-num mat-hide-md">@L["Copies.Col.Blobs"]</th>
+                    <th scope="col" class="mat-hide-md">@L["Copies.Col.Started"]</th>
+                    <th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var j in Model.Items)
+                {
+                    <tr>
+                        <td data-label="@L["Copies.Col.Source"]"><a class="md-path mat-mono" href="/Copies/View?token=@j.Token">@j.Source</a></td>
+                        <td data-label="@L["Copies.Col.Target"]" class="mat-mono md-path mat-hide-sm">@j.Target</td>
+                        <td data-label="@L["Common.Status"]"><partial name="_CopyState" model="j.State" /></td>
+                        <td data-label="@L["Copies.Col.Blobs"]" class="mat-num mat-mono mat-hide-md">@(j.BlobsCopied + j.BlobsSkipped)/@j.BlobsTotal</td>
+                        <td data-label="@L["Copies.Col.Started"]" class="mat-mono mat-hide-md">@Dates.Stamp(j.Created, Model.Zone)</td>
+                        <td class="mat-table__cell-actions"><div class="mat-table__actions"><a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Copies/View?token=@j.Token" aria-label="@L["Common.OpenNamed", j.Source]" data-tip="@L["Common.Open"]">@Ui.Icon("chevron-right")</a></div></td>
+                    </tr>
+                }
+            </tbody>
+        </md-table>
+    }
+    <partial name="_Pager" model="Model.Pager" />
+    <div class="mat-actions">
+        <a class="mat-btn mat-btn--primary" href="/Copies/New">@Ui.Icon("plus")<span>@L["Copies.New"]</span></a>
+    </div>
+</div>

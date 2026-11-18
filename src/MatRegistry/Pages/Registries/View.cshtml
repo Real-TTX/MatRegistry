@@ -1,0 +1,166 @@
+@page "/Registries/View"
+@model MatRegistry.Pages.Registries.ViewModel
+@{
+    var r = Model.Registry;
+    var hosted = r.Kind == RegistryKind.Hosted;
+    ViewData["Title"] = r.Name;
+    ViewData["PageSub"] = r.Description ?? (hosted ? L["Registries.Sub.Hosted"].Value : r.Url);
+    ViewData["NavKey"] = "registry-" + r.Id;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Registries.Title"].Value, "/Registries"), (r.Name, null) };
+    var commands = new List<(string, string)> { (L["Overview.Login"].Value, $"docker login {Model.Host} -u {Model.UserName}") };
+    if (hosted)
+    {
+        if (Model.Role >= AccessRole.Editor)
+        {
+            commands.Add((L["Overview.Push"].Value, $"docker tag myapp:1.0 {Model.Host}/{r.Name}/myapp:1.0"));
+            commands.Add((string.Empty, $"docker push {Model.Host}/{r.Name}/myapp:1.0"));
+        }
+
+        commands.Add((L["Repositories.Pull"].Value, $"docker pull {Model.Host}/{r.Name}/myapp:1.0"));
+    }
+    else if (r.ProxyEnabled)
+    {
+        commands.Add((L["Overview.PullCache"].Value, $"docker pull {Model.Host}/{r.Name}/{(r.Url?.Contains("docker.io") == true ? "nginx" : "<repository>")}:latest"));
+    }
+}
+
+@if (!r.IsActive)
+{
+    <div class="mat-alert mat-alert--warning" role="status">@Ui.Icon("alert")<div class="mat-alert__body">@L["Registries.Off.Text"]</div></div>
+}
+
+<div class="mat-cols">
+    <div class="mat-col-12 mat-col-lg-7">
+        @if (!hosted)
+        {
+            <section class="md-section">
+                <h2 class="md-section__title">@Ui.Icon("search")@L["Registries.Browse"]</h2>
+                <form class="mat-card" method="get" action="/Registries/Browse">
+                    <div class="mat-card__body mat-form">
+                        <input type="hidden" name="id" value="@r.Id" />
+                        <md-field name="repository" label="@L["Registries.Browse.Repository"]" placeholder="@(r.Url?.Contains("docker.io") == true ? "library/nginx" : "team/app")" mono autocomplete="off" required
+                                  hint="@L["Registries.Browse.Hint"]" />
+                        <div class="mat-btn-row mat-btn-row--plain"><button type="submit" class="mat-btn mat-btn--primary">@Ui.Icon("search")<span>@L["Registries.Browse.Open"]</span></button></div>
+                    </div>
+                </form>
+
+                @if (Model.RemoteError is { } error)
+                {
+                    <div class="mat-alert mat-alert--danger" role="alert">@Ui.Icon("alert")<div class="mat-alert__body">@error</div></div>
+                }
+                else if (Model.Catalog is null)
+                {
+                    <p class="md-muted">@L["Registries.Catalog.None"]</p>
+                }
+                else
+                {
+                    <div class="mat-list">
+                        @if (Model.Catalog.Count == 0)
+                        {
+                            <partial name="_Empty" model="@(new EmptyStateModel("box", L["Registries.Catalog.Empty"].Value, L["Registries.Catalog.EmptyText"].Value, false))" />
+                        }
+                        else
+                        {
+                            <md-table caption="@L["Registries.Catalog"]">
+                                <thead><tr><th scope="col">@L["Registries.Catalog"]</th><th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th></tr></thead>
+                                <tbody>
+                                    @foreach (var name in Model.Catalog)
+                                    {
+                                        <tr>
+                                            <td data-label="@L["Registries.Catalog"]"><a class="md-name md-path" href="/Registries/Browse?id=@r.Id&repository=@Uri.EscapeDataString(name)">@Ui.Icon("box")<span>@name</span></a></td>
+                                            <td class="mat-table__cell-actions"><div class="mat-table__actions"><a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Registries/Browse?id=@r.Id&repository=@Uri.EscapeDataString(name)" aria-label="@L["Common.OpenNamed", name]" data-tip="@L["Common.Open"]">@Ui.Icon("chevron-right")</a></div></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </md-table>
+                        }
+                        @if (Model.CatalogNext is not null || Model.After is not null)
+                        {
+                            <nav class="mat-pager" aria-label="@L["Registries.Catalog"]">
+                                @if (Model.After is not null)
+                                {
+                                    <a class="mat-btn mat-btn--secondary mat-btn--sm" href="/Registries/View?id=@r.Id">@Ui.Icon("chevron-left")<span>@L["Registries.Catalog.First"]</span></a>
+                                }
+                                @if (Model.CatalogNext is { } next)
+                                {
+                                    <a class="mat-btn mat-btn--secondary mat-btn--sm" href="/Registries/View?id=@r.Id&after=@Uri.EscapeDataString(next)"><span>@L["Registries.Catalog.Next"]</span>@Ui.Icon("chevron-right")</a>
+                                }
+                            </nav>
+                        }
+                    </div>
+                }
+            </section>
+        }
+
+        <section class="md-section @(hosted ? "" : "md-mt")">
+            <h2 class="md-section__title">@Ui.Icon(hosted ? "box" : "cache")@L[hosted ? "Repositories.Title" : "Registries.Cached"]</h2>
+            @if (Model.Repositories.Count == 0)
+            {
+                <div class="mat-empty mat-empty--framed">
+                    <span class="mat-empty__icon">@Ui.Icon("box")</span>
+                    <div class="mat-empty__title">@L[hosted ? "Repositories.Empty" : "Registries.Cached.Empty"]</div>
+                    <p>@L[hosted ? "Registries.Repositories.EmptyText" : r.ProxyEnabled ? "Registries.Cached.EmptyText" : "Registries.Cached.Off"]</p>
+                </div>
+            }
+            else
+            {
+                <md-table caption="@L["Repositories.Title"]">
+                    <thead><tr><th scope="col">@L["Repositories.Col.Name"]</th><th scope="col" class="mat-num">@L["Tags.Title"]</th><th scope="col" class="mat-num mat-hide-sm">@L["Repositories.Col.Size"]</th><th scope="col" class="mat-hide-md">@L["Repositories.Col.Pushed"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var x in Model.Repositories)
+                        {
+                            <tr>
+                                <td data-label="@L["Repositories.Col.Name"]"><a class="md-name md-path" href="/Repositories/View?id=@x.Id">@Ui.Icon(hosted ? "box" : "cache")<span>@x.Name</span></a></td>
+                                <td data-label="@L["Tags.Title"]" class="mat-num mat-mono">@x.Tags</td>
+                                <td data-label="@L["Repositories.Col.Size"]" class="mat-num mat-mono mat-hide-sm">@Ui.Bytes(x.Size)</td>
+                                <td data-label="@L["Repositories.Col.Pushed"]" class="mat-mono mat-hide-md">@(x.LastPush is null ? "–" : Dates.Stamp(x.LastPush, Model.Zone))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </md-table>
+                @if (Model.RepositoryCount > Model.Repositories.Count)
+                {
+                    <p><a href="/Repositories?registry=@r.Id">@L["Registries.AllRepositories", Model.RepositoryCount]</a></p>
+                }
+            }
+        </section>
+
+        <div class="mat-btn-row md-mt">
+            @if (Model.IsAdmin)
+            {
+                <a class="mat-btn mat-btn--primary" href="/Registries/Edit?id=@r.Id">@Ui.Icon("edit")<span>@L["Common.Edit"]</span></a>
+            }
+            <a class="mat-btn mat-btn--secondary" href="/Registries">@Ui.Icon("back")<span>@L["Common.Back"]</span></a>
+        </div>
+    </div>
+    <div class="mat-col-12 mat-col-lg-5">
+        <div class="mat-card">
+            <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("terminal")@L["Overview.Start"]</h2></div>
+            <div class="mat-card__body">
+                <partial name="_Commands" model="commands" />
+                @if (!hosted && !r.ProxyEnabled)
+                {
+                    <p class="md-muted md-mt">@L["Registries.Cached.Off"]</p>
+                }
+            </div>
+        </div>
+        <div class="mat-card">
+            <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("info")@L["Repositories.Facts"]</h2></div>
+            <div class="mat-card__body">
+                <dl class="mat-kv">
+                    <dt>@L["Registries.Col.Kind"]</dt><dd>@L[hosted ? "Registries.Kind.Hosted" : "Registries.Kind.Remote"]@(r.ProxyEnabled ? " · " + L["Registries.Kind.Cache"].Value : "")</dd>
+                    <dt>@L["Registries.Visibility"]</dt><dd>@L[r.Visibility == RegistryVisibility.Public ? "Registries.Public" : "Registries.Private"]</dd>
+                    <dt>@L["Registries.YourRole"]</dt><dd>@L["Roles." + (Model.IsAdmin ? "Admin" : Model.Role.ToString())]</dd>
+                    @if (!hosted)
+                    {
+                        <dt>@L["Registries.Url"]</dt><dd class="mat-mono md-path">@r.Url</dd>
+                        <dt>@L["Registries.Username"]</dt><dd>@(string.IsNullOrEmpty(r.Username) ? L["Registries.Anonymous"].Value : r.Username)</dd>
+                        <dt>@L["Common.Status"]</dt>
+                        <dd>@L[r.IsReachable is true ? "Registries.Reachable" : r.IsReachable is false ? "Registries.Unreachable" : "Registries.Unchecked"]</dd>
+                    }
+                    <dt>@L["Repositories.Title"]</dt><dd>@Model.RepositoryCount</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>

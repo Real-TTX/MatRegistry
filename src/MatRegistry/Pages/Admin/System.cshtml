@@ -1,0 +1,88 @@
+@page "/Admin/System"
+@model MatRegistry.Pages.Admin.SystemModel
+@{
+    ViewData["Title"] = L["System.Title"].Value;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Admin.Title"].Value, null), (L["System.Title"].Value, null) };
+}
+
+<md-tabs label="@L["System.Tabs"]">
+    @foreach (var tab in SystemModel.Tabs)
+    {
+        <md-tab href="/Admin/System?tab=@tab" active="@(Model.Tab == tab)">@L["System.Tab." + tab]</md-tab>
+    }
+</md-tabs>
+
+<div class="mat-cols">
+    <div class="mat-col-12 mat-col-lg-7">
+        <form class="mat-form" method="post" novalidate>
+            <input type="hidden" name="Tab" value="@Model.Tab" />
+            <partial name="_FormSummary" model="ViewData.ModelState" />
+            @if (Model.Tab == "registry")
+            {
+                <div class="mat-card">
+                    <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("key")@L["System.Tokens"]</h2></div>
+                    <div class="mat-card__body mat-form">
+                        <md-field name="TokenMinutes" kind="number" label="@L["System.TokenMinutes"]" value="@Model.TokenMinutes" min="1" max="1440" inputmode="numeric" hint="@L["System.TokenMinutes.Hint"]" />
+                    </div>
+                </div>
+            }
+            else if (Model.Tab == "storage")
+            {
+                <div class="mat-card">
+                    <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("broom")@L["System.Gc"]</h2></div>
+                    <div class="mat-card__body mat-form">
+                        <p class="md-muted">@L["System.Gc.Text"]</p>
+                        <md-field name="GcIntervalHours" kind="number" label="@L["System.GcInterval"]" value="@Model.GcIntervalHours" min="0" max="720" inputmode="numeric" hint="@L["System.GcInterval.Hint"]" />
+                        <md-field name="GcUntagged" kind="switch" label="@L["System.GcUntagged"]" value="@Model.GcUntagged.ToString()" hint="@L["System.GcUntagged.Hint"]" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="mat-card">
+                    <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("settings")@L["System.Settings"]</h2></div>
+                    <div class="mat-card__body mat-form">
+                        <md-field name="RegistrationOpen" kind="switch" label="@L["System.RegistrationOpen"]" value="@Model.RegistrationOpen.ToString()" hint="@L["System.RegistrationOpen.Hint"]" />
+                        <md-field name="PublicUrl" kind="url" label="@L["System.PublicUrl"]" value="@Model.PublicUrl" placeholder="https://registry.example.com" optional="@(!Model.PublicUrlFixed)" disabled="@Model.PublicUrlFixed" hint="@L[Model.PublicUrlFixed ? "System.PublicUrl.Fixed" : "System.PublicUrl.Hint"]" />
+                    </div>
+                </div>
+            }
+            <md-buttons save="@L["Common.Save"]" back="/Overview" />
+        </form>
+        @if (Model.Tab == "general")
+        {
+            <form method="post" asp-page-handler="CleanUp" class="md-mt">
+                <button type="submit" class="mat-btn mat-btn--secondary" data-confirm="@L["System.CleanUp.Confirm"]" data-confirm-ok="@L["System.CleanUp"]">@Ui.Icon("broom")<span>@L["System.CleanUp"]</span></button>
+            </form>
+        }
+        else if (Model.Tab == "storage")
+        {
+            <form method="post" asp-page-handler="Collect" class="md-mt">
+                <button type="submit" class="mat-btn mat-btn--secondary" data-confirm="@L["System.Gc.Confirm"]" data-confirm-ok="@L["System.Gc.Run"]">@Ui.Icon("broom")<span>@L["System.Gc.Run"]</span></button>
+            </form>
+        }
+    </div>
+    <div class="mat-col-12 mat-col-lg-5">
+        <div class="mat-card">
+            <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("info")@L["System.About"]</h2></div>
+            <div class="mat-card__body">
+                <dl class="mat-kv">
+                    <dt>@L["System.Version"]</dt><dd class="mat-mono">@AppInfo.Version</dd>
+                    <dt>@L["System.Host"]</dt><dd class="mat-mono">@Model.Host</dd>
+                    <dt>@L["System.Database"]</dt><dd class="mat-mono">@Model.Database</dd>
+                    <dt>@L["System.Store"]</dt><dd class="mat-mono">@Model.StorePath</dd>
+                    <dt>@L["Users.Title"]</dt><dd>@Model.Counts.Users</dd>
+                    <dt>@L["Registries.Title"]</dt><dd>@Model.Counts.Registries</dd>
+                    <dt>@L["Repositories.Title"]</dt><dd>@Model.Counts.Repositories.ToString("N0")</dd>
+                    <dt>@L["Tags.Title"]</dt><dd>@Model.Counts.Tags.ToString("N0")</dd>
+                    <dt>@L["System.Manifests"]</dt><dd>@Model.Counts.Manifests.ToString("N0")</dd>
+                    <dt>@L["System.Blobs"]</dt><dd>@Model.Counts.Blobs.ToString("N0")</dd>
+                    <dt>@L["System.Stored"]</dt><dd>@Ui.Bytes(Model.Counts.StoredBytes)</dd>
+                    <dt>@L["System.Free"]</dt><dd>@(Model.FreeBytes < 0 ? "–" : Ui.Bytes(Model.FreeBytes))</dd>
+                    <dt>@L["System.LastGc"]</dt><dd>@(Model.Settings.LastGcDate is { } gc ? Dates.Stamp(gc, Model.Zone) + " · " + Model.Settings.LastGcResult : L["Common.Never"].Value)</dd>
+                    <dt>@L["System.Mail"]</dt><dd>@(Model.MailText ?? L["System.Mail.Off"].Value)</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,42 @@
+@page "/About"
+@model MatRegistry.Pages.AboutModel
+@{
+    ViewData["Title"] = L["About.Title"].Value;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["About.Title"].Value, null) };
+    ViewData["Width"] = "narrow";
+}
+
+<div class="mat-card">
+    <div class="mat-card__body md-about">
+        <div class="md-about__head">
+            @Ui.Logo("lg")
+            <div>
+                <h2>@Ui.AppName</h2>
+                <p>@L["About.Tagline"]</p>
+            </div>
+        </div>
+        <dl class="mat-kv">
+            <dt>@L["About.Version"]</dt><dd class="mat-mono">@AppInfo.Version</dd>
+            <dt>@L["About.Channel"]</dt><dd>@L["About.Channel." + Model.Channel]</dd>
+            <dt>@L["About.Api"]</dt><dd>@L["About.Api.Text"]</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="mat-card">
+    <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("info")@L["About.Keys"]</h2></div>
+    <div class="mat-card__body">
+        <dl class="mat-kv">
+            <dt class="mat-mono">/</dt><dd>@L["About.Keys.Search"]</dd>
+            <dt class="mat-mono">Ctrl + K</dt><dd>@L["About.Keys.Search"]</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="mat-card">
+    <div class="mat-card__body">
+        <p>@L["About.Family"]</p>
+        <p class="md-muted">@L["About.Standards"]</p>
+        <p class="md-muted">@L["About.Author"]</p>
+    </div>
+</div>

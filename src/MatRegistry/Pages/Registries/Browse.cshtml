@@ -1,0 +1,51 @@
+@page "/Registries/Browse"
+@model MatRegistry.Pages.Registries.BrowseModel
+@{
+    var reg = Model.Registry;
+    ViewData["Title"] = Model.Repository;
+    ViewData["PageSub"] = L["Registries.Browse.Sub", reg.Name, reg.Url ?? string.Empty].Value;
+    ViewData["NavKey"] = "registry-" + reg.Id;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Registries.Title"].Value, "/Registries"), (reg.Name, $"/Registries/View?id={reg.Id}"), (Model.Repository, null) };
+}
+
+@if (Model.Error is { } error)
+{
+    <div class="mat-alert mat-alert--danger" role="alert">@Ui.Icon("alert")<div class="mat-alert__body">@error</div></div>
+}
+
+<div class="mat-list">
+    <partial name="_Toolbar" model="Model.Toolbar" />
+    @if (Model.Tags.Count == 0)
+    {
+        var first = Model.Toolbar.Total == 0;
+        <partial name="_Empty" model="@(new EmptyStateModel("tag", L[first ? "Tags.Empty" : "Lists.NoMatch"].Value, L[first ? "Registries.Browse.NoTags" : "Lists.ChangeTools"].Value, false, null, null, Model.Toolbar.UrlReset()))" />
+    }
+    else
+    {
+        <md-table caption="@L["Tags.Title"]">
+            <thead><tr><th scope="col">@L["Tags.Col"]</th><th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th></tr></thead>
+            <tbody>
+                @foreach (var t in Model.Tags)
+                {
+                    var details = $"/Registries/Remote?id={reg.Id}&repository={Uri.EscapeDataString(Model.Repository)}&reference={Uri.EscapeDataString(t)}";
+                    <tr>
+                        <td data-label="@L["Tags.Col"]"><a class="md-name" href="@details">@Ui.Icon("tag")<span>@t</span></a></td>
+                        <td class="mat-table__cell-actions">
+                            <div class="mat-table__actions">
+                                @if (Model.CanCopy)
+                                {
+                                    <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Copies/New?source=@reg.Id&repository=@Uri.EscapeDataString(Model.Repository)&reference=@Uri.EscapeDataString(t)" aria-label="@L["Copies.CopyNamed", t]" data-tip="@L["Copies.New"]">@Ui.Icon("copy")</a>
+                                }
+                                <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="@details" aria-label="@L["Common.OpenNamed", t]" data-tip="@L["Common.Open"]">@Ui.Icon("chevron-right")</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </md-table>
+    }
+    <partial name="_Pager" model="Model.Pager" />
+    <div class="mat-actions">
+        <a class="mat-btn mat-btn--secondary" href="/Registries/View?id=@reg.Id">@Ui.Icon("back")<span>@L["Common.Back"]</span></a>
+    </div>
+</div>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="mat-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <!-- The icons only MatRegistry has, drawn like the toolkit's (24 x 24, a line of 2, round ends; the colour is the text colour). -->
+  <symbol id="mat-i-matregistry" viewBox="0 0 24 24"><rect x='7.5' y='3.5' width='9' height='7.5' rx='1.2'/><rect x='2.5' y='13' width='9' height='7.5' rx='1.2'/><rect x='12.5' y='13' width='9' height='7.5' rx='1.2'/><path d='M12 6v2.5M7 15.5V18M17 15.5V18'/></symbol>
+  <symbol id="mat-i-cache" viewBox="0 0 24 24"><path d='M4 12a8 8 0 0 1 13.7-5.6L20 8.5'/><path d='M20 4v4.5h-4.5'/><rect x='8' y='11' width='8' height='7' rx='1.2'/><path d='M12 13.5v2'/></symbol>
+  <symbol id="mat-i-digest" viewBox="0 0 24 24"><path d='M9 4 7 20M17 4l-2 16M4.5 9h16M3.5 15h16'/></symbol>
+</svg>

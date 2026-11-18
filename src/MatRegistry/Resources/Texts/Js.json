@@ -1,0 +1,7 @@
+{
+  "Js.Offline.Badge": { "en": "Offline", "de": "Offline" },
+  "Js.Offline.Now": { "en": "You are offline. Click to try again.", "de": "Du bist offline. Klicke, um es erneut zu versuchen." },
+
+  "Js.Common.Cancel": { "en": "Cancel", "de": "Abbrechen" },
+  "Js.Common.Close": { "en": "Close", "de": "Schließen" }
+}
